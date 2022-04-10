@@ -7,7 +7,7 @@ Python3 >=3.8
 
 ### Setup
 
-```Run pip install -e .``` in the home directory to setup the project
+Run ```pip install -e .``` in the home directory to setup the project
 
 ## Pre-trained Models
 
@@ -37,4 +37,4 @@ Token name is TAGME_TOKEN
 
 ## Tests
 
-Tests can be run directly using python, eg: ```python3 -v ernie_test.py```
+Tests can be run directly using python, eg: ```python3 ernie_test.py```
