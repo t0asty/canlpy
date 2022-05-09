@@ -9,8 +9,9 @@ from torch import nn
 from torch.nn import CrossEntropyLoss, BCEWithLogitsLoss
 import logging
 
-from canlpy.core.models.bert.model import BertLayer, DenseSkipLayer, BertAttention, BertEmbeddings, BertPooler, LayerNorm
+from canlpy.core.models.bert.model import BertLayer, DenseSkipLayer, BertAttention, BertEmbeddings, BertPooler, LayerNorm,init_weights
 from canlpy.core.models.common.activation_functions import get_activation_function
+
 
 logger = logging.getLogger(__name__)
 
@@ -217,15 +218,17 @@ class PreTrainedErnieModel(nn.Module):
     def init_weights(self, module):
         """ Initialize the weights.
         """
-        if isinstance(module, (nn.Linear, nn.Embedding)):
-            # Slightly different from the TF version which uses truncated_normal for initialization
-            # cf https://github.com/pytorch/pytorch/pull/5617
-            module.weight.data.normal_(mean=0.0, std=self.config.initializer_range)
-        elif isinstance(module, LayerNorm):
-            module.bias.data.zero_()
-            module.weight.data.fill_(1.0)
-        if isinstance(module, nn.Linear) and module.bias is not None:
-            module.bias.data.zero_()
+        init_weights(module, self.config.initializer_range)
+        
+        # if isinstance(module, (nn.Linear, nn.Embedding)):
+        #     # Slightly different from the TF version which uses truncated_normal for initialization
+        #     # cf https://github.com/pytorch/pytorch/pull/5617
+        #     module.weight.data.normal_(mean=0.0, std=self.config.initializer_range)
+        # elif isinstance(module, LayerNorm):
+        #     module.bias.data.zero_()
+        #     module.weight.data.fill_(1.0)
+        # if isinstance(module, nn.Linear) and module.bias is not None:
+        #     module.bias.data.zero_()
 
     @classmethod
     def from_pretrained(cls, dir_path, state_dict=None, cache_dir=None, *inputs, **kwargs):
@@ -426,7 +429,7 @@ class ErnieForMaskedLM(PreTrainedErnieModel):
     def __init__(self, config):
         super().__init__(config)
         self.model = ErnieModel(config)
-        self.cls = BertOnlyMLMHead(config, self.model.embeddings.word_embeddings.weight)
+        self.cls = BertOnlyMLMHead(config, self.model.embeddings.word_embeddings.weight) #BertLMPredictionHead(config, self.model.embeddings.word_embeddings.weight) #
         #Recursively initalize all the weights
         self.apply(self.init_weights)
 

@@ -131,13 +131,5 @@ dmypy.json
 # MacOS
 .DS_Store
 
-# kogito
-examples/data
-examples/relation_modeling/output
-examples/relation_modeling/models
-examples/relation_modeling/data
-wandb
-.vector_cache/
-lightning_logs/
-kogito-relation-matcher/
+# canlpy
 *.bin
