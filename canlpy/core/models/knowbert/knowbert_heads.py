@@ -4,7 +4,7 @@ import torch.nn as nn
 from canlpy.core.models.knowbert.metrics import Average, CategoricalAccuracy, WeightedAverage, ExponentialMovingAverage, MeanReciprocalRank
 from pytorch_pretrained_bert.modeling import BertForPreTraining
 
-class CustomBertPretrainedMetricsLoss(nn.Module):
+class BertPretrainedMetricsLoss(nn.Module):
     def __init__(self):
         super().__init__()
 
@@ -86,7 +86,7 @@ class CustomBertPretrainedMetricsLoss(nn.Module):
         self._metrics['mrr'](prediction_scores, lm_labels_ids, mask_indicator)
 
 
-class CustomBertPretrainedMaskedLM(CustomBertPretrainedMetricsLoss):
+class BertPretrainedMaskedLM(BertPretrainedMetricsLoss):
     """
     So we can evaluate and compute the loss of the pretrained bert model
     """

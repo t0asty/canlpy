@@ -1,11 +1,10 @@
-
 import torch
 import math
 
 from pytorch_pretrained_bert.modeling import BertIntermediate, BertOutput, BertLayer, BertSelfOutput
 
-from canlpy.core.models.knowbert.util import get_dtype_for_module, extend_attention_mask_for_bert, init_bert_weights
-
+from canlpy.core.models.knowbert.util import get_dtype_for_module, extend_attention_mask_for_bert
+from canlpy.core.models.bert.model import init_weights
 
 class SpanWordAttention(torch.nn.Module):
     def __init__(self, config):
@@ -81,9 +80,9 @@ class SpanAttention(torch.nn.Module):
     def __init__(self, config):
         super().__init__()
         self.attention = SpanWordAttention(config)
-        init_bert_weights(self.attention, config.initializer_range, (SpanWordAttention, ))
+        init_weights(self.attention, config.initializer_range)
         self.output = BertSelfOutput(config)
-        init_bert_weights(self.output, config.initializer_range)
+        init_weights(self.output, config.initializer_range)
 
     def forward(self, input_tensor, entity_embeddings, entity_mask):
         span_output, attention_probs = self.attention(input_tensor, entity_embeddings, entity_mask)
@@ -97,8 +96,8 @@ class SpanAttentionLayer(torch.nn.Module):
         self.attention = SpanAttention(config)
         self.intermediate = BertIntermediate(config)
         self.output = BertOutput(config)
-        init_bert_weights(self.intermediate, config.initializer_range)
-        init_bert_weights(self.output, config.initializer_range)
+        init_weights(self.intermediate, config.initializer_range)
+        init_weights(self.output, config.initializer_range)
 
     def forward(self, hidden_states, entity_embeddings, entity_mask):
         attention_output, attention_probs = self.attention(hidden_states, entity_embeddings, entity_mask)

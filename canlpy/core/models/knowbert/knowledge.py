@@ -1,6 +1,6 @@
 import torch
 import json
-from canlpy.core.models.knowbert.util import init_bert_weights
+from canlpy.core.models.bert.model import init_weights
 import h5py
 
 #Similar to nn.Embedding but allow for more functionalities
@@ -8,7 +8,7 @@ class EntityEmbedder():
     pass
 
 #Acts like a standard embedding but with pre-trained entity embeddings and trained POS embeddings
-class CustomWordNetAllEmbedding(torch.nn.Module, EntityEmbedder):
+class WordNetAllEmbedding(torch.nn.Module, EntityEmbedder):
     """
     Combines pretrained fixed embeddings with learned POS embeddings.
 
@@ -76,7 +76,7 @@ class CustomWordNetAllEmbedding(torch.nn.Module, EntityEmbedder):
             self.register_buffer('entity_id_to_pos_index', torch.tensor(entity_id_to_pos_index))
     
             self.pos_embeddings = torch.nn.Embedding(len(entities), pos_embedding_dim)
-            init_bert_weights(self.pos_embeddings, 0.02)
+            init_weights(self.pos_embeddings, 0.02)
 
             self.use_pos = True
         else:
@@ -98,7 +98,7 @@ class CustomWordNetAllEmbedding(torch.nn.Module, EntityEmbedder):
             concat_dim = entity_embeddings.shape[1]
 
         self.proj_feed_forward = torch.nn.Linear(concat_dim, entity_dim)
-        init_bert_weights(self.proj_feed_forward, 0.02)
+        init_weights(self.proj_feed_forward, 0.02)
 
         self.dropout = torch.nn.Dropout(dropout)
 
