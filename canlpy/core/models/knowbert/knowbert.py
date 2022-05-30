@@ -22,60 +22,9 @@ from pytorch_pretrained_bert.modeling import BertForPreTraining, BertLayer, Bert
 
 #Do MLP(prior,span_representation @ entity_embedding) and generates weighted entity embedding from the obtained similarities
 
-class PreTrainedKnowbertModel(nn.Module):
-    """ An abstract class to handle weights initialization and
-        a simple interface for downloading and loading pretrained models.
-    """
-    def __init__(self):
-        super().__init__()
-        #self.config = config
-    pass
 
 
-    @classmethod
-    def from_pretrained(cls, dir_path, state_dict=None,remapping_dict=None):
-
-        pass
-
-
-class KnowBertForTraining(nn.Module):
-    def __init__(self,knowbert_model):
-
-        #The model should be initialized with the corresponding training mode
-        #
-        self.knowbert_model = knowbert_model
-
-    def forward(self, tokens=None, segment_ids=None, candidates=None,
-                lm_label_ids=None, next_sentence_label=None, **kwargs):
-
-        output = self.knowbert_model(tokens, segment_ids, candidates,kwargs)
-
-        #Can also do something about the loss obtained for the respective KG_Soldered
-        loss = output['loss']
-        contextual_embeddings = output['contextual_embeddings']
-        pooled_output = output['pooled_output']
-    
-        if lm_label_ids is not None or next_sentence_label is not None:
-                # compute MLM and NSP loss
-                masked_lm_loss, next_sentence_loss = self._compute_loss(
-                        contextual_embeddings,
-                        pooled_output,
-                        lm_label_ids,
-                        next_sentence_label)
-
-                loss = loss + masked_lm_loss + next_sentence_loss
-
-        # if 'mask_indicator' in kwargs:
-        #     self._compute_mrr(contextual_embeddings,
-        #                     pooled_output,
-        #                     lm_label_ids['lm_labels'],
-        #                     kwargs['mask_indicator'])
-
-
-        return loss
-
-
-class KnowBert(PreTrainedKnowbertModel):
+class KnowBert(nn.Module):
     def __init__(self,
                  soldered_kgs: Dict[str, nn.Module],
                  soldered_layers: Dict[str, int],
