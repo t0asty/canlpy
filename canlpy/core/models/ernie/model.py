@@ -9,7 +9,8 @@ from torch import nn
 from torch.nn import CrossEntropyLoss, BCEWithLogitsLoss
 import logging
 
-from canlpy.core.models.bert.model import BertLayer, DenseSkipLayer, BertAttention, BertEmbeddings, BertPooler, LayerNorm,init_weights
+import canlpy.core.models.bert.model as bert
+from canlpy.core.models.bert.model import BertLayer, DenseSkipLayer, BertAttention, BertEmbeddings, BertPooler, LayerNorm
 from canlpy.core.models.common.activation_functions import get_activation_function
 
 
@@ -215,20 +216,10 @@ class PreTrainedErnieModel(nn.Module):
                 ))
         self.config = config
 
-    def init_weights(self, module):
+    def init_weights(self):
         """ Initialize the weights.
         """
-        init_weights(module, self.config.initializer_range)
-        
-        # if isinstance(module, (nn.Linear, nn.Embedding)):
-        #     # Slightly different from the TF version which uses truncated_normal for initialization
-        #     # cf https://github.com/pytorch/pytorch/pull/5617
-        #     module.weight.data.normal_(mean=0.0, std=self.config.initializer_range)
-        # elif isinstance(module, LayerNorm):
-        #     module.bias.data.zero_()
-        #     module.weight.data.fill_(1.0)
-        # if isinstance(module, nn.Linear) and module.bias is not None:
-        #     module.bias.data.zero_()
+        bert.init_weights(self, self.config.initializer_range)
 
     @classmethod
     def from_pretrained(cls, dir_path, state_dict=None, cache_dir=None, *inputs, **kwargs):
@@ -343,9 +334,8 @@ class ErnieModel(PreTrainedErnieModel):
         super().__init__(config)
         self.embeddings = BertEmbeddings(config.vocab_size,config.hidden_size, config.max_position_embeddings,config.hidden_dropout_prob,config.type_vocab_size)
         self.encoder = ErnieEncoder(config)
-        #No need in every cases => might want to remove it
         self.pooler = BertPooler(config.hidden_size)
-        self.apply(self.init_weights)
+        self.init_weights()
 
     def forward(self, input_ids, token_type_ids=None, attention_mask=None, input_ent=None, ent_mask=None, output_all_encoded_layers=True):
         if attention_mask is None:
@@ -431,7 +421,7 @@ class ErnieForMaskedLM(PreTrainedErnieModel):
         self.model = ErnieModel(config)
         self.cls = BertOnlyMLMHead(config, self.model.embeddings.word_embeddings.weight) #BertLMPredictionHead(config, self.model.embeddings.word_embeddings.weight) #
         #Recursively initalize all the weights
-        self.apply(self.init_weights)
+        self.init_weights()
 
     def forward(self, input_ids, input_ents, ent_mask=None, token_type_ids=None, attention_mask=None, masked_lm_labels=None):
         sequence_output, _ = self.model(input_ids, token_type_ids, attention_mask, input_ents, ent_mask,
@@ -542,7 +532,7 @@ class BertForPreTraining(PreTrainedErnieModel):
         super().__init__(config)
         self.model = ErnieModel(config)
         self.cls = BertPreTrainingHeads(config, self.model.embeddings.word_embeddings.weight)
-        self.apply(self.init_weights)
+        self.init_weights()
 
     def forward(self, input_ids, token_type_ids=None, attention_mask=None, masked_lm_labels=None, 
         input_ent=None, ent_mask=None, next_sentence_label=None, candidate=None, ent_labels=None):
@@ -647,7 +637,7 @@ class BertForNextSentencePrediction(PreTrainedErnieModel):
         super(BertForNextSentencePrediction, self).__init__(config)
         self.model = ErnieModel(config)
         self.cls = BertOnlyNSPHead(config)
-        self.apply(self.init_weights)
+        self.init_weights()
 
     def forward(self, input_ids, token_type_ids=None, attention_mask=None, next_sentence_label=None):
         _, pooled_output = self.model(input_ids, token_type_ids, attention_mask,
@@ -668,7 +658,7 @@ class BertForEntityTyping(PreTrainedErnieModel):
         self.bert = ErnieModel(config)
         self.dropout = nn.Dropout(config.hidden_dropout_prob)
         self.typing = nn.Linear(config.hidden_size, num_labels, False)
-        self.apply(self.init_weights)
+        self.init_weights()
 
     def forward(self, input_ids, token_type_ids=None, attention_mask=None, input_ent=None, ent_mask=None, labels=None):
         _, pooled_output = self.bert(input_ids, token_type_ids, attention_mask, input_ent, ent_mask, output_all_encoded_layers=False)
@@ -689,7 +679,7 @@ class BertForSTSB(PreTrainedErnieModel):
         self.model = ErnieModel(config)
         self.dropout = nn.Dropout(config.hidden_dropout_prob)
         self.classifier = nn.Linear(config.hidden_size, 2)
-        self.apply(self.init_weights)
+        self.init_weights()
 
         self.m = torch.nn.LogSoftmax(-1)
         self.mm = torch.nn.Softmax(-1)
@@ -761,7 +751,7 @@ class BertForSequenceClassification(PreTrainedErnieModel):
         self.model = ErnieModel(config)
         self.dropout = nn.Dropout(config.hidden_dropout_prob)
         self.classifier = nn.Linear(config.hidden_size, num_labels)
-        self.apply(self.init_weights)
+        self.init_weights()
 
     def forward(self, input_ids, token_type_ids=None, attention_mask=None, input_ent=None, ent_mask=None, labels=None):
         _, pooled_output = self.model(input_ids, token_type_ids, attention_mask, input_ent, ent_mask, output_all_encoded_layers=False)
@@ -783,7 +773,7 @@ class BertForNQ(PreTrainedErnieModel):
         self.model = ErnieModel(config)
         self.dropout = nn.Dropout(config.hidden_dropout_prob)
         self.classifier = nn.Linear(config.hidden_size, 1)
-        self.apply(self.init_weights)
+        self.init_weights()
 
     def forward(self, input_ids, token_type_ids=None, attention_mask=None, input_ent=None, ent_mask=None, choice_mask=None, labels=None):
         #if choice_mask==None:
@@ -863,7 +853,7 @@ class BertForMultipleChoice(PreTrainedErnieModel):
         self.model = ErnieModel(config)
         self.dropout = nn.Dropout(config.hidden_dropout_prob)
         self.classifier = nn.Linear(config.hidden_size, 1)
-        self.apply(self.init_weights)
+        self.init_weights()
 
     def forward(self, input_ids, token_type_ids=None, attention_mask=None, labels=None):
         flat_input_ids = input_ids.view(-1, input_ids.size(-1))
@@ -932,7 +922,7 @@ class BertForTokenClassification(PreTrainedErnieModel):
         self.model = ErnieModel(config)
         self.dropout = nn.Dropout(config.hidden_dropout_prob)
         self.classifier = nn.Linear(config.hidden_size, num_labels)
-        self.apply(self.init_weights)
+        self.init_weights()
 
     def forward(self, input_ids, token_type_ids=None, attention_mask=None, labels=None):
         sequence_output, _ = self.model(input_ids, token_type_ids, attention_mask, output_all_encoded_layers=False)
@@ -1007,7 +997,7 @@ class BertForQuestionAnswering(PreTrainedErnieModel):
         # TODO check with Google if it's normal there is no dropout on the token classifier of SQuAD in the TF version
         # self.dropout = nn.Dropout(config.hidden_dropout_prob)
         self.qa_outputs = nn.Linear(config.hidden_size, 2)
-        self.apply(self.init_weights)
+        self.init_weights()
 
     def forward(self, input_ids, token_type_ids=None, attention_mask=None, input_ent=None, ent_mask=None, start_positions=None, end_positions=None):
         sequence_output, _ = self.model(input_ids, token_type_ids, attention_mask, input_ent, ent_mask, output_all_encoded_layers=False)
