@@ -194,13 +194,19 @@ class LayerNorm(nn.Module):
 
         return res
 
-def init_weights(module, initializer_range):
-    
-    if isinstance(module, (torch.nn.Linear, torch.nn.Embedding)):
-        module.weight.data.normal_(mean=0.0, std=initializer_range)
-    elif isinstance(module, LayerNorm):
-        module.bias.data.zero_()
-        module.weight.data.fill_(1.0)
 
-    if isinstance(module, torch.nn.Linear) and module.bias is not None:
-        module.bias.data.zero_()
+def init_weights(module, initializer_range):
+    """Recursively initialize all weights """
+    def _do_init(m):
+        if isinstance(module, (torch.nn.Linear, torch.nn.Embedding)):
+            module.weight.data.normal_(mean=0.0, std=initializer_range)
+        elif isinstance(module, LayerNorm):
+            module.bias.data.zero_()
+            module.weight.data.fill_(1.0)
+
+        if isinstance(module, torch.nn.Linear) and module.bias is not None:
+            module.bias.data.zero_()
+
+        else:
+            for submodule in module.modules():
+                _do_init(submodule)
