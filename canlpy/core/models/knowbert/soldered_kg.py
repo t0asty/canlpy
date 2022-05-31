@@ -6,8 +6,9 @@ import torch
 import torch.nn as  nn
 from canlpy.core.models.knowbert.span_extractor import SelfAttentiveSpanExtractor
 from canlpy.core.models.knowbert.span_attention_layer import SpanAttentionLayer
-from canlpy.core.models.knowbert.util import get_dtype_for_module, extend_attention_mask_for_bert, init_bert_weights
-from canlpy.core.models.knowbert.knowledge import CustomWordNetAllEmbedding, EntityEmbedder
+from canlpy.core.models.bert.model import init_weights
+from canlpy.core.models.knowbert.util import get_dtype_for_module, extend_attention_mask_for_bert
+from canlpy.core.models.knowbert.knowledge import WordNetAllEmbedding, EntityEmbedder
 from canlpy.core.models.knowbert.metrics import F1Metric
 from pytorch_pretrained_bert.modeling import BertForPreTraining, BertLayer, BertLayerNorm, BertConfig, BertEncoder
 
@@ -24,8 +25,8 @@ class DotAttentionWithPrior(nn.Module):
         # layers for the dot product attention
         self.out_layer_1 = torch.nn.Linear(2, output_feed_forward_hidden_dim)
         self.out_layer_2 = torch.nn.Linear(output_feed_forward_hidden_dim, 1)
-        init_bert_weights(self.out_layer_1, initializer_range)
-        init_bert_weights(self.out_layer_2, initializer_range)
+        init_weights(self.out_layer_1, initializer_range)
+        init_weights(self.out_layer_2, initializer_range)
 
         self.weighted_entity_threshold = weighted_entity_threshold
 
@@ -167,20 +168,20 @@ class EntityDisambiguator(torch.nn.Module):
 
         #self-attentive span pooling descirbed in paper
         self.span_extractor = SelfAttentiveSpanExtractor(entity_embedding_dim)
-        init_bert_weights(self.span_extractor._global_attention,
+        init_weights(self.span_extractor._global_attention,
                           initializer_range)
 
         self.dropout = torch.nn.Dropout(dropout)
 
         self.bert_to_kg_projector = torch.nn.Linear(
                 contextual_embedding_dim, entity_embedding_dim)
-        init_bert_weights(self.bert_to_kg_projector, initializer_range)
+        init_weights(self.bert_to_kg_projector, initializer_range)
 
         self.projected_span_layer_norm = BertLayerNorm(entity_embedding_dim, eps=1e-5)
-        init_bert_weights(self.projected_span_layer_norm, initializer_range)
+        init_weights(self.projected_span_layer_norm, initializer_range)
 
         self.kg_layer_norm = BertLayerNorm(entity_embedding_dim, eps=1e-5)
-        init_bert_weights(self.kg_layer_norm, initializer_range)
+        init_weights(self.kg_layer_norm, initializer_range)
 
         # already pretrained, don't init
         self.entity_embeddings = entity_embeddings
@@ -207,7 +208,7 @@ class EntityDisambiguator(torch.nn.Module):
                 intermediate_size=span_encoder_config['intermediate_size']
             )
             self.span_encoder = BertEncoder(config)
-            init_bert_weights(self.span_encoder, initializer_range)
+            init_weights(self.span_encoder, initializer_range)
 
     def unfreeze(self, mode):
         def _is_in_alignment(n):
@@ -325,7 +326,7 @@ class EntityDisambiguator(torch.nn.Module):
 
         return return_dict
 
-class CustomEntityLinkingBase(nn.Module):
+class EntityLinkingBase(nn.Module):
     def __init__(self,
                  null_entity_id: int,
                  margin: float = 0.2,
@@ -563,9 +564,8 @@ class CustomEntityLinkingBase(nn.Module):
 
         return {'loss': loss}
 
-#NOTE: previously inherited from EntityLinkingBase
 #Does equation 1,2,3,4,5
-class CustomEntityLinkingWithCandidateMentions(CustomEntityLinkingBase):
+class EntityLinkingWithCandidateMentions(EntityLinkingBase):
     def __init__(self,
                  null_entity_id: int,
                  entity_embedding: EntityEmbedder = None,
@@ -594,7 +594,7 @@ class CustomEntityLinkingWithCandidateMentions(CustomEntityLinkingBase):
 
         entity_embedding_dim = entity_embedding.embedding_dim
         
-        if type(entity_embedding) == CustomWordNetAllEmbedding:
+        if type(entity_embedding) == WordNetAllEmbedding:
             for param in entity_embedding.parameters():
                 param.requires_grad_(False)
         
@@ -658,7 +658,7 @@ class CustomEntityLinkingWithCandidateMentions(CustomEntityLinkingBase):
 
         return return_dict
 
-class CustomSolderedKG(nn.Module):
+class SolderedKG(nn.Module):
     def __init__(self,
                  entity_linker: nn.Module,
                  span_attention_config: Dict[str, int], 
@@ -678,7 +678,7 @@ class CustomSolderedKG(nn.Module):
         self.contextual_embedding_dim = self.entity_linker.disambiguator.contextual_embedding_dim
 
         self.weighted_entity_layer_norm = BertLayerNorm(self.entity_embedding_dim, eps=1e-5)
-        init_bert_weights(self.weighted_entity_layer_norm, 0.02)
+        init_weights(self.weighted_entity_layer_norm, 0.02)
 
         self.dropout = torch.nn.Dropout(0.1)
 

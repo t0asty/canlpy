@@ -6,8 +6,7 @@ import torch.nn as nn
 import numpy as np
 
 from canlpy.core.models.knowbert.util import get_dtype_for_module, extend_attention_mask_for_bert
-from canlpy.core.models.knowbert.knowledge import CustomWordNetAllEmbedding, EntityEmbedder
-from canlpy.core.models.knowbert.metrics import F1Metric
+from canlpy.core.models.knowbert.knowledge import WordNetAllEmbedding, EntityEmbedder
 
 from pytorch_pretrained_bert.modeling import BertForPreTraining, BertLayer, BertLayerNorm, BertConfig, BertEncoder
 
@@ -23,60 +22,9 @@ from pytorch_pretrained_bert.modeling import BertForPreTraining, BertLayer, Bert
 
 #Do MLP(prior,span_representation @ entity_embedding) and generates weighted entity embedding from the obtained similarities
 
-class CustomPreTrainedKnowbertModel(nn.Module):
-    """ An abstract class to handle weights initialization and
-        a simple interface for downloading and loading pretrained models.
-    """
-    def __init__(self):
-        super().__init__()
-        #self.config = config
-    pass
 
 
-    @classmethod
-    def from_pretrained(cls, dir_path, state_dict=None,remapping_dict=None):
-
-        pass
-
-
-class CustomKnowBertForTraining(nn.Module):
-    def __init__(self,knowbert_model):
-
-        #The model should be initialized with the corresponding training mode
-        #
-        self.knowbert_model = knowbert_model
-
-    def forward(self, tokens=None, segment_ids=None, candidates=None,
-                lm_label_ids=None, next_sentence_label=None, **kwargs):
-
-        output = self.knowbert_model(tokens, segment_ids, candidates,kwargs)
-
-        #Can also do something about the loss obtained for the respective KG_Soldered
-        loss = output['loss']
-        contextual_embeddings = output['contextual_embeddings']
-        pooled_output = output['pooled_output']
-    
-        if lm_label_ids is not None or next_sentence_label is not None:
-                # compute MLM and NSP loss
-                masked_lm_loss, next_sentence_loss = self._compute_loss(
-                        contextual_embeddings,
-                        pooled_output,
-                        lm_label_ids,
-                        next_sentence_label)
-
-                loss = loss + masked_lm_loss + next_sentence_loss
-
-        # if 'mask_indicator' in kwargs:
-        #     self._compute_mrr(contextual_embeddings,
-        #                     pooled_output,
-        #                     lm_label_ids['lm_labels'],
-        #                     kwargs['mask_indicator'])
-
-
-        return loss
-
-
-class CustomKnowBert(CustomPreTrainedKnowbertModel):
+class KnowBert(nn.Module):
     def __init__(self,
                  soldered_kgs: Dict[str, nn.Module],
                  soldered_layers: Dict[str, int],
@@ -183,38 +131,36 @@ class CustomKnowBert(CustomPreTrainedKnowbertModel):
             module = getattr(self, key + "_soldered_kg")
             module.unfreeze(self.mode)
 
-    #NOTE: return for each soldered_kg, the loss it can compute??
-
     def forward(self, tokens=None, segment_ids=None, candidates=None, **kwargs):
 
-        #Receives: 
-        #tokens['tokens']: Tensor of tokens indices (used to idx an embedding) => because a batch contains multiple
-         #sentences with varying # of tokens, all tokens tensors are padded with zeros 
-         #shape: (batch_size (#sentences), max_seq_len)
+        """Receives: 
+        tokens['tokens']: Tensor of tokens indices (used to idx an embedding) => because a batch contains multiple
+        sentences with varying # of tokens, all tokens tensors are padded with zeros 
+        shape: (batch_size (#sentences), max_seq_len)
 
-        #segment_ids: Tenso of segments_ids for each token (0 for first segment and 1 for second), can be used for NSP
-         #shape: (batch_size,max_seq_len)
+        segment_ids: Tenso of segments_ids for each token (0 for first segment and 1 for second), can be used for NSP
+        shape: (batch_size,max_seq_len)
 
-        #candidates, for each SolderedKB contains:
+        candidates, for each SolderedKB contains:
 
-         #candidates['wordnet']['candidate_entity_priors']: hape:(batch_size, max # detected entities, max # KB candidate entities)
-          #Correctness probabilities estimated by the entity extractor (sum to 1 (or 0 if padding) on axis 2)
-          #Adds 0 padding to axis 1 when there is less detected entities in the sentence than in the max sentence
-          #Adds 0 padding to axis 2 when there is less detected KB entities for an entity in the sentence than in the max candidate KB entities entity
+          candidates['wordnet']['candidate_entity_priors']: hape:(batch_size, max # detected entities, max # KB candidate entities)
+          Correctness probabilities estimated by the entity extractor (sum to 1 (or 0 if padding) on axis 2)
+          Adds 0 padding to axis 1 when there is less detected entities in the sentence than in the max sentence
+          Adds 0 padding to axis 2 when there is less detected KB entities for an entity in the sentence than in the max candidate KB entities entity
 
-         #candidates['wordnet']['ids']: shape: (batch_size, max # detected entities, max # KB candidate entities)
-          #Ids of the KB candidate entities + 0 padding on axis 1 or 2 if necessary
+          candidates['wordnet']['ids']: shape: (batch_size, max # detected entities, max # KB candidate entities)
+          Ids of the KB candidate entities + 0 padding on axis 1 or 2 if necessary
 
-         #candidates['wordnet']['candidate_spans']: shape: (batch_size, max # detected entities, 2)
-          #Spans of which sequence of tokens correspond to an entity in the sentence, eg: [1,2] for Michael Jackson (both bounds are included)
-          #Padding with [-1,-1] when no more detected entities
+          candidates['wordnet']['candidate_spans']: shape: (batch_size, max # detected entities, 2)
+          Spans of which sequence of tokens correspond to an entity in the sentence, eg: [1,2] for Michael Jackson (both bounds are included)
+          Padding with [-1,-1] when no more detected entities
 
-         #candidates['wordnet']['candidate_segment_ids']: shape: (batch_size, max # detected entities)
-          #For each sentence entity, indicate to which segment ids it corresponds to
+          candidates['wordnet']['candidate_segment_ids']: shape: (batch_size, max # detected entities)
+          For each sentence entity, indicate to which segment ids it corresponds to
         
-        #lm_label_ids: suppose it is the lables of the masked token?
-
-        #next_sentence_label: suppose it is the labels of the next sentence for NSP
+        kwargs:
+        lm_label_ids: suppose it is the labels of the masked token
+        next_sentence_label: labels of the next sentence for NSP"""
 
         assert candidates.keys() == self.soldered_kgs.keys()
 
@@ -230,7 +176,7 @@ class CustomKnowBert(CustomPreTrainedKnowbertModel):
         start_layer_index = 0
         loss = 0.0
 
-        #NOTE: dictionnary that for each soldered kg layer contains a list of the ids of the correct entity in text => can be usd to train the entity linker
+        #dictionnary that for each soldered kg layer contains a list of the ids of the correct entity in text => can be usd to train the entity linker
         gold_entities = kwargs.pop('gold_entities', None)
 
         for layer_num, soldered_kg_key in self.layer_to_soldered_kg:

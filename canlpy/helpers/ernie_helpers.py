@@ -162,12 +162,15 @@ def process_sentences(text_a:str,text_b:str,masked_indices:List[int],name_to_QID
     for idx in masked_indices:
         tokens[idx] = '[MASK]'
 
-    # Convert tokens to BPE indices: [101, 2040, 2001, 3958, 27227, 1029, 102, 3958, 103, 2001, 1037, 13997, 11510, 1012, 102]
+    # Convert tokens to BPE indices: [101, 2040, 2001, 3958, 27227, 1029, 102, 3958, 103, 2001, 1037, 103, 103, 1012, 102]
     indexed_tokens = tokenizer.convert_tokens_to_ids(tokens)
+    print(indexed_tokens)
 
     #ent_tensor: shape(1,15,100)
     #ent_mask: [[1, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0]]
     ents_tensor,ent_mask = get_entities_embeddings_and_mask(entities,QID_to_eid, eid_to_embeddings,device=device)
+
+    
 
     # Convert inputs to PyTorch tensors, can be put on cuda
     tokens_tensor = torch.tensor([indexed_tokens],device=device)
