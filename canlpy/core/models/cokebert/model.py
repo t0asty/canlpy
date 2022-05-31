@@ -8,7 +8,7 @@ import torch
 from torch import nn
 from torch.nn import CrossEntropyLoss, BCEWithLogitsLoss
 
-from canlpy.core.models.bert.model import BertEmbeddings, BertPooler, init_weights
+from canlpy.core.models.bert.model import BertEmbeddings, BertPooler, init_weights, LayerNorm
 from canlpy.core.models.ernie.model import ErnieEncoder
 #from canlpy.core.models.common.activation_functions import get_activation_function
 
@@ -135,7 +135,15 @@ class PreTrainedCokeBertModel(nn.Module):
     def init_weights(self, module):
         """ Initialize the weights.
         """
-        init_weights(module, self.config.initializer_range)
+        if isinstance(module, (nn.Linear, nn.Embedding)):
+            # Slightly different from the TF version which uses truncated_normal for initialization
+            # cf https://github.com/pytorch/pytorch/pull/5617
+            module.weight.data.normal_(mean=0.0, std=self.config.initializer_range)
+        elif isinstance(module, LayerNorm):
+            module.bias.data.zero_()
+            module.weight.data.fill_(1.0)
+        if isinstance(module, nn.Linear) and module.bias is not None:
+            module.bias.data.zero_()
         
         # if isinstance(module, (nn.Linear, nn.Embedding)):
         #     # Slightly different from the TF version which uses truncated_normal for initialization
@@ -198,12 +206,12 @@ class PreTrainedCokeBertModel(nn.Module):
                 mapping = json.load(file)
 
             for old_key,new_key in mapping.items():
-                if(new_key in model.state_dict()):
+                if(new_key in model.state_dict() and old_key in state_dict.keys()):
                     model_shape = model.state_dict()[new_key].shape
                     if(model_shape!=state_dict[old_key].shape):
                         logger.error(f'model.state_dict() {new_key}:{model_shape} != state_dict {old_key}:{state_dict[old_key].shape}')
                         
-                state_dict[new_key] = state_dict.pop(old_key)
+                    state_dict[new_key] = state_dict.pop(old_key)
 
         
         missing_keys,unexpected_keys =  model.load_state_dict(state_dict,strict=False)
@@ -260,11 +268,13 @@ class CokeBertModel(PreTrainedCokeBertModel):
 
 
         all_encoder_layers = self.text_encoder(embedding_output, extended_attention_mask, input_ent, extended_ent_mask, ent_mask, output_all_encoded_layers=output_all_encoded_layers)
+
         hidden_states = all_encoder_layers[-1]
 
         if len(input_ent[input_ent!=0]) == 0:
             # no input entities -> return 0s
-            hidden_states_ent = torch.zeros(input_ent.shape[0], input_ent.shape[1],200).cuda().half()
+            # TODO: get shape from config
+            hidden_states_ent = torch.zeros(input_ent.shape[0], input_ent.shape[1],200).cuda()#.half()
         else:
 
             hidden_states_ent = self.dk_encoder(input_ent, hidden_states, k_v_s) #[(k_1, v_1), (k_2, v_2)]
@@ -279,9 +289,9 @@ class CokeBertModel(PreTrainedCokeBertModel):
         pooled_output = self.pooler(sequence_output)
         if not output_all_encoded_layers:
             encoded_layers = encoded_layers[-1]
-            return encoded_layers, pooled_output
+            #return encoded_layers, pooled_output
         
-        return all_encoder_layers, pooled_output
+        return sequence_output, pooled_output
 
 
 class DKEncoder(nn.Module):
@@ -303,6 +313,7 @@ class DKEncoder(nn.Module):
 
         self.k_v_dim = k_v_dim
 
+    """
     def self_attention(self, q, k_1, v_1, k_2, v_2):
         q_2 = self.q_linear_2(q)
         q_2 = self.tanh(q_2)
@@ -343,6 +354,7 @@ class DKEncoder(nn.Module):
         sentence_entity_reps = attention.matmul(v_1).squeeze(2)
 
         return sentence_entity_reps
+    """
 
 
     def forward(self, input_ent, q, k_v_s):#k_1, v_1, k_2, v_2):
@@ -446,7 +458,7 @@ class DK_fusion(nn.Module):
         self.number = layer_no
 
         self.leaky_relu = nn.LeakyReLU()
-        self.softmax = nn.Softmax()
+        self.softmax = nn.Softmax(dim=layer_no+1)
     
     def forward(self, q_i, k, v):
         attention = ((q_i * k).sum(self.number+2)).div(math.sqrt(self.k_v_dim))
