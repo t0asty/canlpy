@@ -33,13 +33,6 @@ from torch.utils.data import TensorDataset, DataLoader, RandomSampler, Sequentia
 from torch.utils.data.distributed import DistributedSampler
 from torch.nn.parallel import DistributedDataParallel
 
-#from knowledge_bert.typing import BertTokenizer as BertTokenizer_label
-#from knowledge_bert.tokenization import BertTokenizer
-#from knowledge_bert.modeling import BertForEntityTyping
-#from knowledge_bert.optimization import BertAdam
-#from knowledge_bert.file_utils import PYTORCH_PRETRAINED_BERT_CACHE
-
-from canlpy.core.components.typing import BertTokenizer as BertTokenizer_label
 from canlpy.core.components.tokenization import BertTokenizer
 from canlpy.core.models.ernie.model import ErnieForEntityTyping
 from canlpy.train.optimization import BertAdam
@@ -429,7 +422,7 @@ def main():
 
     processor = TypingProcessor()
 
-    tokenizer_label = BertTokenizer_label.from_pretrained(args.ernie_model, do_lower_case=args.do_lower_case)
+    tokenizer_label = BertTokenizer.from_pretrained(args.ernie_model, do_lower_case=args.do_lower_case,label=True)
     tokenizer = BertTokenizer.from_pretrained(args.ernie_model, do_lower_case=args.do_lower_case)
 
     train_examples = None

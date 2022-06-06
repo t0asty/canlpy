@@ -71,9 +71,7 @@ def whitespace_tokenize(text):
     tokens = text.split()
     return tokens
 
-def whitespace_tokenize_ent(text, ents):
-
-  #print(text[ents[0][1]:ents[0][2]], ents[0][1])
+def whitespace_tokenize_ent(text, ents,label=False):
 
   #text = text.strip()
   if not text:
@@ -81,7 +79,10 @@ def whitespace_tokenize_ent(text, ents):
 
   dd = {}
   for ent in ents:
-    dd[ent[1]] = ent[0]
+    if(label):
+        dd[ent[0]] = (ent[1], ent[2])
+    else:
+        dd[ent[1]] = ent[0]
 
   begin = 0
   tokens = []
@@ -94,9 +95,12 @@ def whitespace_tokenize_ent(text, ents):
       entity = "UNK"
       for k, v in dd.items():
         # if begin >= v[0] and begin < v[1]:
-        if begin == k:
-          entity = v
-          break
+        if(label and begin >= v[0] and begin < v[1]):
+            entity = k
+            break
+        elif(not label and begin == k):
+            entity = v
+            break
       tokens.append(text[begin:pos])
       entities.append(entity)
     begin = pos
@@ -106,10 +110,13 @@ def whitespace_tokenize_ent(text, ents):
   if text[begin:] != " ":
     entity = "UNK"
     for k, v in dd.items():
-      #if begin >= v[0] and begin < v[1]:
-      if begin == k:
-        entity = v
-        break
+        if(label and begin >= v[0] and begin < v[1]):
+            entity = k
+            break
+        elif(not label and begin == k):
+            entity = v
+            break
+
     tokens.append(text[begin:])
     entities.append(entity)
   #print(tokens)
@@ -118,7 +125,7 @@ def whitespace_tokenize_ent(text, ents):
 class BertTokenizer(object):
     """Runs end-to-end tokenization: punctuation splitting + wordpiece"""
 
-    def __init__(self, vocab_file, do_lower_case=True, max_len=None):
+    def __init__(self, vocab_file, do_lower_case=True, max_len=None,label=False):
         if not os.path.isfile(vocab_file):
             raise ValueError(
                 "Can't find a vocabulary file at path '{}'. To load the vocabulary from a Google pretrained "
@@ -126,7 +133,8 @@ class BertTokenizer(object):
         self.vocab = load_vocab(vocab_file)
         self.ids_to_tokens = collections.OrderedDict(
             [(ids, tok) for tok, ids in self.vocab.items()])
-        self.basic_tokenizer = BasicTokenizer(do_lower_case=do_lower_case)
+        self.label=label
+        self.basic_tokenizer = BasicTokenizer(do_lower_case=do_lower_case,label=self.label)
         self.wordpiece_tokenizer = WordpieceTokenizer(vocab=self.vocab)
         self.max_len = max_len if max_len is not None else int(1e12)
 
@@ -137,7 +145,7 @@ class BertTokenizer(object):
             mark = True
             for sub_token in self.wordpiece_tokenizer.tokenize(token):
                 split_tokens.append(sub_token)
-                if mark:
+                if mark or self.label:
                     split_ents.append(ent)
                     mark = False
                 else:
@@ -206,13 +214,14 @@ class BertTokenizer(object):
 class BasicTokenizer(object):
     """Runs basic tokenization (punctuation splitting, lower casing, etc.)."""
 
-    def __init__(self, do_lower_case=True):
+    def __init__(self, do_lower_case=True,label=False):
         """Constructs a BasicTokenizer.
 
         Args:
           do_lower_case: Whether to lower case the input.
         """
         self.do_lower_case = do_lower_case
+        self.label = label
 
     def tokenize(self, text, ents):
         """Tokenizes a piece of text."""
@@ -230,7 +239,7 @@ class BasicTokenizer(object):
         # and generally don't have any Chinese data in them (there are Chinese
         # characters in the vocabulary because Wikipedia does have some Chinese
         # words in the English Wikipedia.).
-        orig_tokens = whitespace_tokenize_ent(text, ents)
+        orig_tokens = whitespace_tokenize_ent(text, ents,self.label)
         split_tokens = []
         split_ents = []
         for token, ent in orig_tokens:
