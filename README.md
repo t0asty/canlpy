@@ -34,7 +34,3 @@ Add your tokens in a tokens.py file located in the canlpy/helpers folder
 
 ### Tagme
 Token name is TAGME_TOKEN
-
-## Tests
-
-Tests can be run directly using python, eg: ```python3 ernie_test.py```

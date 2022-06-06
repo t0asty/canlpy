@@ -4,7 +4,8 @@ import os
 import json
 import copy
 import math
-from torch import nn
+import torch
+import torch.nn as nn
 from torch.nn import CrossEntropyLoss, BCEWithLogitsLoss
 import logging
 
