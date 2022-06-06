@@ -1,10 +1,3 @@
-import torch
-import json
-
-from pytorch_pretrained_bert.modeling import \
-        BertLayer, BertAttention, BertSelfAttention, BertSelfOutput, \
-        BertOutput, BertIntermediate, BertEncoder, BertLayerNorm
-
 
 def get_dtype_for_module(module):
     # gets dtype for module parameters, for fp16 support when casting

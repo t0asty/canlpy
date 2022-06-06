@@ -22,8 +22,6 @@ from pytorch_pretrained_bert.modeling import BertForPreTraining, BertLayer, Bert
 
 #Do MLP(prior,span_representation @ entity_embedding) and generates weighted entity embedding from the obtained similarities
 
-
-
 class KnowBert(nn.Module):
     def __init__(self,
                  soldered_kgs: Dict[str, nn.Module],

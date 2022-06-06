@@ -10,7 +10,8 @@ from tqdm import tqdm
 
 from canlpy.helpers.knowbert_tokenizer.file_utils import cached_path
 from canlpy.core.models.knowbert.knowbert import KnowBert
-from canlpy.core.models.knowbert.soldered_kg import SolderedKG, EntityLinkingWithCandidateMentions
+from canlpy.core.components.fusion.knowbert_fusion import SolderedKG
+from canlpy.core.components.fusion.knowbert_fusion.soldered_kg import EntityLinkingWithCandidateMentions
 from canlpy.core.models.knowbert.knowledge import WordNetAllEmbedding
 from canlpy.helpers.knowbert_tokenizer.vocabulary import Vocabulary
 from canlpy.helpers.knowbert_tokenizer.tokenizer import KnowBertBatchifier
