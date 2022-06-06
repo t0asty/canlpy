@@ -9,7 +9,7 @@ import numpy as np
 from tqdm import tqdm
 
 from canlpy.helpers.knowbert_tokenizer.file_utils import cached_path
-from canlpy.core.models.knowbert.knowbert import KnowBert
+from canlpy.core.models.knowbert.model import KnowBert
 from canlpy.core.components.fusion.knowbert_fusion import SolderedKG
 from canlpy.core.components.fusion.knowbert_fusion.soldered_kg import EntityLinkingWithCandidateMentions
 from canlpy.core.models.knowbert.knowledge import WordNetAllEmbedding
