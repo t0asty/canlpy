@@ -10,7 +10,7 @@ from canlpy.core.components.fusion.knowbert_fusion.span_extractor import SelfAtt
 from canlpy.core.components.fusion.knowbert_fusion.span_attention_layer import SpanAttentionLayer
 
 from canlpy.core.models.bert.model import init_weights
-from canlpy.core.models.knowbert.util import get_dtype_for_module, extend_attention_mask_for_bert
+from canlpy.core.util.util import get_dtype_for_module, extend_attention_mask_for_bert
 from canlpy.core.models.knowbert.knowledge import WordNetAllEmbedding, EntityEmbedder
 from canlpy.core.models.knowbert.metrics import F1Metric
 

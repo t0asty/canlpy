@@ -5,7 +5,7 @@ import torch
 import torch.nn as nn
 import numpy as np
 
-from canlpy.core.models.knowbert.util import get_dtype_for_module, extend_attention_mask_for_bert
+from canlpy.core.util.util import get_dtype_for_module, extend_attention_mask_for_bert
 from canlpy.core.components.fusion.knowbert_fusion import SolderedKG
 
 from pytorch_pretrained_bert.modeling import BertForPreTraining, BertLayer, BertLayerNorm, BertConfig, BertEncoder

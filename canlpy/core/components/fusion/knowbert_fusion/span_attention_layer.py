@@ -4,7 +4,7 @@ import math
 import torch.nn as nn
 from pytorch_pretrained_bert.modeling import BertIntermediate, BertOutput, BertLayer, BertSelfOutput
 
-from canlpy.core.models.knowbert.util import get_dtype_for_module, extend_attention_mask_for_bert
+from canlpy.core.util.util import get_dtype_for_module, extend_attention_mask_for_bert
 from canlpy.core.models.bert.model import init_weights
 
 class SpanWordAttention(nn.Module):

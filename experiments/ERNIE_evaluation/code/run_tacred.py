@@ -40,7 +40,7 @@ from torch.utils.data.distributed import DistributedSampler
 #from ernie_clean import BertForSequenceClassification#ERNIE, 
 from canlpy.core.components.tokenization import BertTokenizer
 from canlpy.core.models.ernie.model import ErnieForSequenceClassification
-from canlpy.core.components.optimization import BertAdam
+from canlpy.train.optimization import BertAdam
 from canlpy.core.components.file_utils import PYTORCH_PRETRAINED_BERT_CACHE
 
 logging.basicConfig(format = '%(asctime)s - %(levelname)s - %(name)s -   %(message)s',

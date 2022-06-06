@@ -36,7 +36,7 @@ from torch.utils.data.distributed import DistributedSampler
 
 from canlpy.core.components.tokenization import BertTokenizer
 from canlpy.core.models.ernie.model import ErnieForSequenceClassification
-from canlpy.core.components.optimization import BertAdam
+from canlpy.train.optimization import BertAdam
 from canlpy.core.components.file_utils import PYTORCH_PRETRAINED_BERT_CACHE
 #from knowledge_bert.modeling import BertForSequenceClassification
 # from ernie_clean import BertForSequenceClassification
