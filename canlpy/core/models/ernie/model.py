@@ -3,16 +3,15 @@ import typing
 from typing import List,Dict,Tuple
 import os
 import json
-import copy
 import math
 from torch import nn
 from torch.nn import CrossEntropyLoss, BCEWithLogitsLoss
 import logging
 
 import canlpy.core.models.bert.model as bert
-from canlpy.core.models.bert.model import BertLayer, DenseSkipLayer, BertAttention, BertEmbeddings, BertPooler, LayerNorm
-from canlpy.core.models.common.activation_functions import get_activation_function
-from canlpy.core.components.fusion import ErnieFusion
+from canlpy.core.models.bert.model import BertEmbeddings, BertPooler, LayerNorm
+from canlpy.core.models.ernie.components import ErnieLayer, ErnieLayerMix,ErnieEncoder
+from canlpy.core.models.common.heads import BertOnlyMLMHead,BertOnlyNSPHead,ErniePreTrainingHeads
 
 
 logger = logging.getLogger(__name__)
@@ -21,7 +20,7 @@ CONFIG_NAME = 'ernie_config.json'
 WEIGHTS_NAME = 'pytorch_model.bin'
 MAPPING_FILE = 'mapping.json'
 
-class ErnieConfig(object):
+class ErnieConfig():
     """Configuration class to store the configuration of an `ErnieModel`.
     """
     def __init__(self,
@@ -100,81 +99,6 @@ class ErnieConfig(object):
         """Serializes this instance to a Python dictionary."""
         output = copy.deepcopy(self.__dict__)
         return output
-
-class ErnieLayer(nn.Module):
-    def __init__(self, hidden_size,entity_size,intermediate_size,num_attention_heads,num_attention_heads_ent,attention_probs_dropout_prob,hidden_dropout_prob,activation_fn):
-        super().__init__()
-
-        #BertAttention
-        self.attention_tokens = BertAttention(hidden_size,num_attention_heads,attention_probs_dropout_prob,hidden_dropout_prob)
-        self.attention_ent = BertAttention(entity_size,num_attention_heads_ent,attention_probs_dropout_prob,hidden_dropout_prob)
-
-        self.fusion = ErnieFusion(hidden_size,entity_size,intermediate_size,hidden_dropout_prob,activation_fn)
-        
-
-    def forward(self, hidden_states, attention_mask, hidden_states_ent, attention_mask_ent, ent_mask):
-
-        #BertAttention
-        attention_tokens = self.attention_tokens(hidden_states,attention_mask)
-        attention_ent = self.attention_ent(hidden_states_ent,attention_mask_ent) * ent_mask
-        
-        hidden_states,hidden_states_ent = self.fusion(attention_tokens,attention_ent)
-
-        return hidden_states,hidden_states_ent
-
-class ErnieLayerMix(nn.Module):
-    #No multi-head attention + dense for entities
-    def __init__(self, hidden_size,entity_size,intermediate_size,num_attention_heads,attention_probs_dropout_prob,hidden_dropout_prob,activation_fn):
-        super().__init__()
-        self.attention_tokens = BertAttention(hidden_size,num_attention_heads,attention_probs_dropout_prob,hidden_dropout_prob)
-
-        self.fusion = ErnieFusion(hidden_size,entity_size,intermediate_size,hidden_dropout_prob,activation_fn)
-        
-
-    def forward(self, hidden_states, attention_mask, hidden_states_ent, attention_mask_ent, ent_mask):
-        attention_tokens = self.attention_tokens(hidden_states,attention_mask)
-        attention_ent = hidden_states_ent * ent_mask
-        
-        hidden_states,hidden_states_ent = self.fusion(attention_tokens,attention_ent)
-
-        return hidden_states,hidden_states_ent
-
-class ErnieEncoder(nn.Module):
-    def __init__(self, config:ErnieConfig):
-        super().__init__()
-        bert_layer = BertLayer(config.hidden_size,config.intermediate_size,config.num_attention_heads,config.attention_probs_dropout_prob,config.hidden_dropout_prob,config.hidden_act)
-        ernie_layer = ErnieLayer(config.hidden_size,config.entity_size,config.intermediate_size,config.num_attention_heads,config.num_attention_heads_ent,config.attention_probs_dropout_prob,config.hidden_dropout_prob,config.hidden_act)
-        ernie_layer_mix = ErnieLayerMix(config.hidden_size,config.entity_size,config.intermediate_size,config.num_attention_heads,config.attention_probs_dropout_prob,config.hidden_dropout_prob,config.hidden_act)
-        layers = []
-        for t in config.layer_types:
-            if t == "sim":
-                layers.append(copy.deepcopy(bert_layer))
-            if t == "norm":
-                layers.append(copy.deepcopy(ernie_layer))
-            if t == "mix":
-                layers.append(copy.deepcopy(ernie_layer_mix))
-        for _ in range(config.num_hidden_layers-len(layers)):
-            layers.append(copy.deepcopy(bert_layer))
-        self.layer = nn.ModuleList(layers)
-
-    def forward(self, hidden_states, attention_mask, hidden_states_ent, attention_mask_ent, ent_mask, output_all_encoded_layers=True):
-        all_encoder_layers = []
-        ent_mask = ent_mask.to(dtype=next(self.parameters()).dtype).unsqueeze(-1)
-        # if self.training:
-        #     ent_mask = ent_mask.half().unsqueeze(-1)
-        # else:
-        #     ent_mask = ent_mask.float().unsqueeze(-1)
-        # ent_mask = ent_mask.float().unsqueeze(-1)
-        for layer_module in self.layer:
-            if(isinstance(layer_module, BertLayer)):
-                hidden_states = layer_module(hidden_states, attention_mask)
-            else:
-                hidden_states, hidden_states_ent = layer_module(hidden_states, attention_mask, hidden_states_ent, attention_mask_ent, ent_mask)
-            if output_all_encoded_layers:
-                all_encoder_layers.append(hidden_states)
-        if not output_all_encoded_layers:
-            all_encoder_layers.append(hidden_states)
-        return all_encoder_layers    
     
 class PreTrainedErnieModel(nn.Module):
     """ An abstract class to handle weights initialization and
@@ -197,26 +121,19 @@ class PreTrainedErnieModel(nn.Module):
         bert.init_weights(self, self.config.initializer_range)
 
     @classmethod
-    def from_pretrained(cls, dir_path, state_dict=None, cache_dir=None, *inputs, **kwargs):
+    def from_pretrained(cls, dir_path, state_dict=None, *inputs, **kwargs):
         """
-        Instantiate a PreTrainedBertModel from a pre-trained model file or a pytorch state dict.
+        Instantiate a PreTrainedErnieModel from a pre-trained model file or a pytorch state dict.
         Download and cache the pre-trained model file if needed.
 
         Params:
-            pretrained_model_name: either:
-                - a str with the name of a pre-trained model to load selected in the list of:
-                    . `bert-base-uncased`
-                    . `bert-large-uncased`
-                    . `bert-base-cased`
-                    . `bert-base-multilingual`
-                    . `bert-base-chinese`
-                - a path or url to a pretrained model archive containing:
+            dir_path:
+                - a path to a pretrained model archive containing:
                     . `bert_config.json` a configuration file for the model
-                    . `pytorch_model.bin` a PyTorch dump of a BertForPreTraining instance
-            cache_dir: an optional path to a folder in which the pre-trained models will be cached.
+                    . `pytorch_model.bin` a PyTorch dump of a ErnieForPreTraining instance
             state_dict: an optional state dictionnary (collections.OrderedDict object) to use instead of Google pre-trained models
-            *inputs, **kwargs: additional input for the specific Bert class
-                (ex: num_labels for BertForSequenceClassification)
+            *inputs, **kwargs: additional input for the specific Ernie class
+                (ex: num_labels for ErnieForSequenceClassification)
         """
         
         # Load config
@@ -298,10 +215,10 @@ class ErnieModel(PreTrainedErnieModel):
     input_mask = torch.LongTensor([[1, 1, 1], [1, 1, 0]])
     token_type_ids = torch.LongTensor([[0, 0, 1], [0, 1, 0]])
 
-    config = modeling.BertConfig(vocab_size_or_config_json_file=32000, hidden_size=768,
+    config = modeling.ErnieConfig(vocab_size_or_config_json_file=32000, hidden_size=768,
         num_hidden_layers=12, num_attention_heads=12, intermediate_size=3072)
 
-    model = modeling.BertModel(config=config)
+    model = modeling.ErnieModel(config=config)
     all_encoder_layers, pooled_output = model(input_ids, token_type_ids, input_mask)
     ```
     """
@@ -349,6 +266,8 @@ class ErnieModel(PreTrainedErnieModel):
             encoded_layers = encoded_layers[-1]
         return encoded_layers, pooled_output
 
+#Specific ERNIE models
+
 class ErnieForMaskedLM(PreTrainedErnieModel):
     """Ernie model with the masked language modeling head.
     This module comprises the Ernie model followed by the masked language modeling head.
@@ -394,7 +313,7 @@ class ErnieForMaskedLM(PreTrainedErnieModel):
     def __init__(self, config):
         super().__init__(config)
         self.model = ErnieModel(config)
-        self.cls = BertOnlyMLMHead(config, self.model.embeddings.word_embeddings.weight) #BertLMPredictionHead(config, self.model.embeddings.word_embeddings.weight) #
+        self.cls = BertOnlyMLMHead(config, self.model.embeddings.word_embeddings.weight)
         #Recursively initalize all the weights
         self.init_weights()
 
@@ -410,57 +329,14 @@ class ErnieForMaskedLM(PreTrainedErnieModel):
         else:
             return prediction_scores
 
-class BertOnlyMLMHead(nn.Module):
-    def __init__(self, config, bert_model_embedding_weights):
-        super().__init__()
-        self.predictions = BertLMPredictionHead(config, bert_model_embedding_weights)
-
-    def forward(self, sequence_output):
-        prediction_scores = self.predictions(sequence_output)
-        return prediction_scores
-
-class BertLMPredictionHead(nn.Module):
-    def __init__(self, config, bert_model_embedding_weights):
-        super().__init__()
-        self.transform = BertPredictionHeadTransform(config)
-
-        # The output weights are the same as the input embeddings, but there is
-        # an output-only bias for each token.
-        self.decoder = nn.Linear(bert_model_embedding_weights.size(1),
-                                 bert_model_embedding_weights.size(0),
-                                 bias=False)
-        self.decoder.weight = bert_model_embedding_weights
-        self.bias = nn.Parameter(torch.zeros(bert_model_embedding_weights.size(0)))
-
-    def forward(self, hidden_states):
-        hidden_states = self.transform(hidden_states)
-        hidden_states = self.decoder(hidden_states) + self.bias
-        return hidden_states
-        
-class BertPredictionHeadTransform(nn.Module):
-
-    def __init__(self, config):
-        super().__init__()
-        self.dense = nn.Linear(config.hidden_size, config.hidden_size)
-        self.transform_act_fn = get_activation_function(config.hidden_act) if isinstance(config.hidden_act, str) else config.hidden_act
-        self.LayerNorm = LayerNorm(config.hidden_size, eps=1e-12)
-
-    def forward(self, hidden_states):
-        hidden_states = self.dense(hidden_states)
-        hidden_states = self.transform_act_fn(hidden_states)
-        hidden_states = self.LayerNorm(hidden_states)
-        return hidden_states
-
-#HEADS: Copy paste from Ernie github & UNTESTED 
-
-class BertForPreTraining(PreTrainedErnieModel):
-    """BERT model with pre-training heads.
-    This module comprises the BERT model followed by the two pre-training heads:
+class ErnieForPreTraining(PreTrainedErnieModel):
+    """Ernie model with pre-training heads.
+    This module comprises the Ernie model followed by the two pre-training heads:
         - the masked language modeling head, and
         - the next sentence classification head.
 
     Params:
-        config: a BertConfig class instance with the configuration to build a new model.
+        config: a ErnieConfig class instance with the configuration to build a new model.
 
     Inputs:
         `input_ids`: a torch.LongTensor of shape [batch_size, sequence_length]
@@ -496,17 +372,17 @@ class BertForPreTraining(PreTrainedErnieModel):
     input_mask = torch.LongTensor([[1, 1, 1], [1, 1, 0]])
     token_type_ids = torch.LongTensor([[0, 0, 1], [0, 1, 0]])
 
-    config = BertConfig(vocab_size_or_config_json_file=32000, hidden_size=768,
+    config = ErnieConfig(vocab_size_or_config_json_file=32000, hidden_size=768,
         num_hidden_layers=12, num_attention_heads=12, intermediate_size=3072)
 
-    model = BertForPreTraining(config)
+    model = ErnieForPreTraining(config)
     masked_lm_logits_scores, seq_relationship_logits = model(input_ids, token_type_ids, input_mask)
     ```
     """
     def __init__(self, config):
         super().__init__(config)
         self.model = ErnieModel(config)
-        self.cls = BertPreTrainingHeads(config, self.model.embeddings.word_embeddings.weight)
+        self.cls = ErniePreTrainingHeads(config, self.model.embeddings.word_embeddings.weight)
         self.init_weights()
 
     def forward(self, input_ids, token_type_ids=None, attention_mask=None, masked_lm_labels=None, 
@@ -527,50 +403,12 @@ class BertForPreTraining(PreTrainedErnieModel):
         else:
             return prediction_scores, seq_relationship_score, prediction_scores_ent
 
-class BertEntPredictionHead(nn.Module):
-    def __init__(self, config):
-        super().__init__()
-        #TODO: might want to change
-        config_ent = copy.deepcopy(config)
-        config_ent.hidden_size = 100
-        self.transform = BertPredictionHeadTransform(config_ent)
-
-    def forward(self, hidden_states, candidate):
-        hidden_states = self.transform(hidden_states)
-        candidate = torch.squeeze(candidate, 0)
-        # hidden_states [batch_size, max_seq, dim]
-        # candidate [entity_num_in_the_batch, dim]
-        # return [batch_size, max_seq, entity_num_in_the_batch]
-        return torch.matmul(hidden_states, candidate.t())
-
-class BertPreTrainingHeads(nn.Module):
-    def __init__(self, config, bert_model_embedding_weights):
-        super().__init__()
-        self.predictions = BertLMPredictionHead(config, bert_model_embedding_weights)
-        self.predictions_ent = BertEntPredictionHead(config)
-        self.seq_relationship = nn.Linear(config.hidden_size, 2)
-
-    def forward(self, sequence_output, pooled_output, candidate):
-        prediction_scores = self.predictions(sequence_output)
-        seq_relationship_score = self.seq_relationship(pooled_output)
-        prediction_scores_ent = self.predictions_ent(sequence_output, candidate)
-        return prediction_scores, seq_relationship_score, prediction_scores_ent
-
-class BertOnlyNSPHead(nn.Module):
-    def __init__(self, config):
-        super().__init__()
-        self.seq_relationship = nn.Linear(config.hidden_size, 2)
-
-    def forward(self, pooled_output):
-        seq_relationship_score = self.seq_relationship(pooled_output)
-        return seq_relationship_score
-
-class BertForNextSentencePrediction(PreTrainedErnieModel):
+class ErnieForNextSentencePrediction(PreTrainedErnieModel):
     """BERT model with next sentence prediction head.
     This module comprises the BERT model followed by the next sentence classification head.
 
     Params:
-        config: a BertConfig class instance with the configuration to build a new model.
+        config: a ErnieConfig class instance with the configuration to build a new model.
 
     Inputs:
         `input_ids`: a torch.LongTensor of shape [batch_size, sequence_length]
@@ -601,15 +439,15 @@ class BertForNextSentencePrediction(PreTrainedErnieModel):
     input_mask = torch.LongTensor([[1, 1, 1], [1, 1, 0]])
     token_type_ids = torch.LongTensor([[0, 0, 1], [0, 1, 0]])
 
-    config = BertConfig(vocab_size_or_config_json_file=32000, hidden_size=768,
+    config = ErnieConfig(vocab_size_or_config_json_file=32000, hidden_size=768,
         num_hidden_layers=12, num_attention_heads=12, intermediate_size=3072)
 
-    model = BertForNextSentencePrediction(config)
+    model = ErnieForNextSentencePrediction(config)
     seq_relationship_logits = model(input_ids, token_type_ids, input_mask)
     ```
     """
     def __init__(self, config):
-        super(BertForNextSentencePrediction, self).__init__(config)
+        super().__init__(config)
         self.model = ErnieModel(config)
         self.cls = BertOnlyNSPHead(config)
         self.init_weights()
@@ -626,9 +464,9 @@ class BertForNextSentencePrediction(PreTrainedErnieModel):
         else:
             return seq_relationship_score
 
-class BertForEntityTyping(PreTrainedErnieModel):
+class ErnieForEntityTyping(PreTrainedErnieModel):
     def __init__(self, config, num_labels=2):
-        super(BertForEntityTyping, self).__init__(config)
+        super().__init__(config)
         self.num_labels = num_labels
         self.bert = ErnieModel(config)
         self.dropout = nn.Dropout(config.hidden_dropout_prob)
@@ -647,9 +485,9 @@ class BertForEntityTyping(PreTrainedErnieModel):
         else:
             return logits
 
-class BertForSTSB(PreTrainedErnieModel):
+class ErnieForSTSB(PreTrainedErnieModel):
     def __init__(self, config, num_labels=2):
-        super(BertForSTSB, self).__init__(config)
+        super().__init__(config)
         self.num_labels = 2
         self.model = ErnieModel(config)
         self.dropout = nn.Dropout(config.hidden_dropout_prob)
@@ -675,13 +513,13 @@ class BertForSTSB(PreTrainedErnieModel):
         else:
             return self.mm(logits)
 
-class BertForSequenceClassification(PreTrainedErnieModel):
-    """BERT model for classification.
+class ErnieForSequenceClassification(PreTrainedErnieModel):
+    """Ernie model for classification.
     This module is composed of the BERT model with a linear layer on top of
     the pooled output.
 
     Params:
-        `config`: a BertConfig class instance with the configuration to build a new model.
+        `config`: a ErnieConfig class instance with the configuration to build a new model.
         `num_labels`: the number of classes for the classifier. Default = 2.
 
     Inputs:
@@ -711,12 +549,12 @@ class BertForSequenceClassification(PreTrainedErnieModel):
     input_mask = torch.LongTensor([[1, 1, 1], [1, 1, 0]])
     token_type_ids = torch.LongTensor([[0, 0, 1], [0, 1, 0]])
 
-    config = BertConfig(vocab_size_or_config_json_file=32000, hidden_size=768,
+    config = ErnieConfig(vocab_size_or_config_json_file=32000, hidden_size=768,
         num_hidden_layers=12, num_attention_heads=12, intermediate_size=3072)
 
     num_labels = 2
 
-    model = BertForSequenceClassification(config, num_labels)
+    model = ErnieForSequenceClassification(config, num_labels)
     logits = model(input_ids, token_type_ids, input_mask)
     ```
     """
@@ -740,7 +578,7 @@ class BertForSequenceClassification(PreTrainedErnieModel):
         else:
             return logits
 
-class BertForNQ(PreTrainedErnieModel):
+class ErnieForNQ(PreTrainedErnieModel):
 
     def __init__(self, config, num_choices=2):
         super().__init__(config)
@@ -778,13 +616,13 @@ class BertForNQ(PreTrainedErnieModel):
         else:
             return reshaped_logits
 
-class BertForMultipleChoice(PreTrainedErnieModel):
-    """BERT model for multiple choice tasks.
+class ErnieForMultipleChoice(PreTrainedErnieModel):
+    """Ernie model for multiple choice tasks.
     This module is composed of the BERT model with a linear layer on top of
     the pooled output.
 
     Params:
-        `config`: a BertConfig class instance with the configuration to build a new model.
+        `config`: a ErnieConfig class instance with the configuration to build a new model.
         `num_choices`: the number of classes for the classifier. Default = 2.
 
     Inputs:
@@ -813,12 +651,12 @@ class BertForMultipleChoice(PreTrainedErnieModel):
     input_ids = torch.LongTensor([[[31, 51, 99], [15, 5, 0]], [[12, 16, 42], [14, 28, 57]]])
     input_mask = torch.LongTensor([[[1, 1, 1], [1, 1, 0]],[[1,1,0], [1, 0, 0]]])
     token_type_ids = torch.LongTensor([[[0, 0, 1], [0, 1, 0]],[[0, 1, 1], [0, 0, 1]]])
-    config = BertConfig(vocab_size_or_config_json_file=32000, hidden_size=768,
+    config = ErnieConfig(vocab_size_or_config_json_file=32000, hidden_size=768,
         num_hidden_layers=12, num_attention_heads=12, intermediate_size=3072)
 
     num_choices = 2
 
-    model = BertForMultipleChoice(config, num_choices)
+    model = ErnieForMultipleChoice(config, num_choices)
     logits = model(input_ids, token_type_ids, input_mask)
     ```
     """
@@ -846,13 +684,13 @@ class BertForMultipleChoice(PreTrainedErnieModel):
         else:
             return reshaped_logits
 
-class BertForTokenClassification(PreTrainedErnieModel):
-    """BERT model for token-level classification.
-    This module is composed of the BERT model with a linear layer on top of
+class ErnieForTokenClassification(PreTrainedErnieModel):
+    """Ernie model for token-level classification.
+    This module is composed of the Ernie model with a linear layer on top of
     the full hidden state of the last layer.
 
     Params:
-        `config`: a BertConfig class instance with the configuration to build a new model.
+        `config`: a ErnieConfig class instance with the configuration to build a new model.
         `num_labels`: the number of classes for the classifier. Default = 2.
 
     Inputs:
@@ -882,12 +720,12 @@ class BertForTokenClassification(PreTrainedErnieModel):
     input_mask = torch.LongTensor([[1, 1, 1], [1, 1, 0]])
     token_type_ids = torch.LongTensor([[0, 0, 1], [0, 1, 0]])
 
-    config = BertConfig(vocab_size_or_config_json_file=32000, hidden_size=768,
+    config = ErnieConfig(vocab_size_or_config_json_file=32000, hidden_size=768,
         num_hidden_layers=12, num_attention_heads=12, intermediate_size=3072)
 
     num_labels = 2
 
-    model = BertForTokenClassification(config, num_labels)
+    model = ErnieForTokenClassification(config, num_labels)
     logits = model(input_ids, token_type_ids, input_mask)
     ```
     """
@@ -911,14 +749,14 @@ class BertForTokenClassification(PreTrainedErnieModel):
         else:
             return logits
 
-class BertForQuestionAnswering(PreTrainedErnieModel):
-    """BERT model for Question Answering (span extraction).
-    This module is composed of the BERT model with a linear layer on top of
+class ErnieForQuestionAnswering(PreTrainedErnieModel):
+    """Ernie model for Question Answering (span extraction).
+    This module is composed of the Ernie model with a linear layer on top of
     the sequence output that computes start_logits and end_logits
 
     Params:
         `config`: either
-            - a BertConfig class instance with the configuration to build a new model, or
+            - a ErnieConfig class instance with the configuration to build a new model, or
             - a str with the name of a pre-trained model to load selected in the list of:
                 . `bert-base-uncased`
                 . `bert-large-uncased`
@@ -959,10 +797,10 @@ class BertForQuestionAnswering(PreTrainedErnieModel):
     input_mask = torch.LongTensor([[1, 1, 1], [1, 1, 0]])
     token_type_ids = torch.LongTensor([[0, 0, 1], [0, 1, 0]])
 
-    config = BertConfig(vocab_size_or_config_json_file=32000, hidden_size=768,
+    config = ErnieConfig(vocab_size_or_config_json_file=32000, hidden_size=768,
         num_hidden_layers=12, num_attention_heads=12, intermediate_size=3072)
 
-    model = BertForQuestionAnswering(config)
+    model = ErnieForQuestionAnswering(config)
     start_logits, end_logits = model(input_ids, token_type_ids, input_mask)
     ```
     """

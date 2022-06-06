@@ -38,7 +38,7 @@ from torch.utils.data.distributed import DistributedSampler
 #from knowledge_bert.file_utils import PYTORCH_PRETRAINED_BERT_CACHE
 
 from canlpy.core.components.tokenization import BertTokenizer
-from canlpy.core.models.ernie.model import BertForSequenceClassification
+from canlpy.core.models.ernie.model import ErnieForSequenceClassification
 from canlpy.core.components.optimization import BertAdam
 from canlpy.core.components.file_utils import PYTORCH_PRETRAINED_BERT_CACHE
 
@@ -458,7 +458,7 @@ def main():
         print(x, mark)
         output_model_file = os.path.join(args.output_dir, x)
         model_state_dict = torch.load(output_model_file)
-        model, _ = BertForSequenceClassification.from_pretrained(args.ernie_model, state_dict=model_state_dict, num_labels=len(label_list))
+        model, _ = ErnieForSequenceClassification.from_pretrained(args.ernie_model, state_dict=model_state_dict, num_labels=len(label_list))
         model.to(device)
 
         if mark:

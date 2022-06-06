@@ -41,7 +41,7 @@ from torch.nn.parallel import DistributedDataParallel
 
 from canlpy.core.components.typing import BertTokenizer as BertTokenizer_label
 from canlpy.core.components.tokenization import BertTokenizer
-from canlpy.core.models.ernie.model import BertForEntityTyping
+from canlpy.core.models.ernie.model import ErnieForEntityTyping
 from canlpy.core.components.optimization import BertAdam
 from canlpy.core.components.file_utils import PYTORCH_PRETRAINED_BERT_CACHE
 

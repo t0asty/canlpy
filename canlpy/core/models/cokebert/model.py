@@ -9,7 +9,7 @@ from torch import nn
 from torch.nn import CrossEntropyLoss, BCEWithLogitsLoss
 
 from canlpy.core.models.bert.model import BertEmbeddings, BertPooler, init_weights, LayerNorm
-from canlpy.core.models.ernie.model import ErnieEncoder
+from canlpy.core.models.ernie.components import ErnieEncoder
 #from canlpy.core.models.common.activation_functions import get_activation_function
 
 logger = logging.getLogger(__name__)

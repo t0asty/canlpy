@@ -32,11 +32,16 @@ import torch
 from torch.utils.data import TensorDataset, DataLoader, RandomSampler, SequentialSampler
 from torch.utils.data.distributed import DistributedSampler
 
-from knowledge_bert.tokenization import BertTokenizer
+# from knowledge_bert.tokenization import BertTokenizer
+
+from canlpy.core.components.tokenization import BertTokenizer
+from canlpy.core.models.ernie.model import ErnieForSequenceClassification
+from canlpy.core.components.optimization import BertAdam
+from canlpy.core.components.file_utils import PYTORCH_PRETRAINED_BERT_CACHE
 #from knowledge_bert.modeling import BertForSequenceClassification
-from ernie_clean import BertForSequenceClassification
-from knowledge_bert.optimization import BertAdam
-from knowledge_bert.file_utils import PYTORCH_PRETRAINED_BERT_CACHE
+# from ernie_clean import BertForSequenceClassification
+# from knowledge_bert.optimization import BertAdam
+# from knowledge_bert.file_utils import PYTORCH_PRETRAINED_BERT_CACHE
 
 logging.basicConfig(format='%(asctime)s - %(levelname)s - %(name)s -   %(message)s',
                     datefmt='%m/%d/%Y %H:%M:%S',
