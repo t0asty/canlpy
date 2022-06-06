@@ -5,7 +5,7 @@ import numpy as np
 
 from pytorch_pretrained_bert.tokenization import BertTokenizer, BasicTokenizer
 
-from canlpy.helpers.knowbert_tokenizer.common import MentionGenerator, get_empty_candidates
+from canlpy.core.util.knowbert_tokenizer.common import get_empty_candidates
 
 start_token = "[CLS]"
 sep_token = "[SEP]"
@@ -24,6 +24,9 @@ def truncate_sequence_pair(word_piece_tokens_a, word_piece_tokens_b, max_word_pi
 
 
 class TokenizerAndCandidateGenerator():
+    pass
+
+class MentionGenerator():
     pass
 
 class BertTokenizerAndCandidateGenerator(TokenizerAndCandidateGenerator):

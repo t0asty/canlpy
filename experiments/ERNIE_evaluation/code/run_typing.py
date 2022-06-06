@@ -33,10 +33,10 @@ from torch.utils.data import TensorDataset, DataLoader, RandomSampler, Sequentia
 from torch.utils.data.distributed import DistributedSampler
 from torch.nn.parallel import DistributedDataParallel
 
-from canlpy.core.components.tokenization import BertTokenizer
+from canlpy.core.util.tokenization import BertTokenizer
 from canlpy.core.models.ernie.model import ErnieForEntityTyping
 from canlpy.train.optimization import BertAdam
-from canlpy.core.components.file_utils import PYTORCH_PRETRAINED_BERT_CACHE
+from canlpy.core.util.file_utils import CACHE_DIRECTORY
 
 logging.basicConfig(format = '%(asctime)s - %(levelname)s - %(name)s -   %(message)s',
                     datefmt = '%m/%d/%Y %H:%M:%S',
@@ -445,7 +445,7 @@ def main():
 
     # Prepare model
     model, _ = BertForEntityTyping.from_pretrained(args.ernie_model,
-               cache_dir=PYTORCH_PRETRAINED_BERT_CACHE / 'distributed_{}'.format(args.local_rank),
+               cache_dir=CACHE_DIRECTORY / 'distributed_{}'.format(args.local_rank),
                num_labels = len(label_list))
     #model = ERNIE
     #if args.fp16:

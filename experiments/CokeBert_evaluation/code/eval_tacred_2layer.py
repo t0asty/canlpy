@@ -36,12 +36,12 @@ from torch.utils.data.distributed import DistributedSampler
 #from knowledge_bert.modeling import BertForSequenceClassification
 #from knowledge_bert.modeling_new_n_CLS_comb200 import BertForSequenceClassification
 #from knowledge_bert.optimization import BertAdam
-#from knowledge_bert.file_utils import PYTORCH_PRETRAINED_BERT_CACHE
+#from knowledge_bert.file_utils import CACHE_DIRECTORY
 
-from canlpy.core.components.tokenization import BertTokenizer
+from canlpy.core.util.tokenization import BertTokenizer
 from canlpy.core.models.cokebert.model import CokeBertForSequenceClassification
 from canlpy.train.optimization import BertAdam
-from canlpy.core.components.file_utils import PYTORCH_PRETRAINED_BERT_CACHE
+from canlpy.core.util.file_utils import CACHE_DIRECTORY
 
 import time
 import pickle

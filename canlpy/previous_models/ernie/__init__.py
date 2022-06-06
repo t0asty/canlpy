@@ -5,4 +5,4 @@ from .modeling import (BertConfig, BertModel, BertForPreTraining,
                        BertForSequenceClassification, BertForMultipleChoice,
                        BertForTokenClassification, BertForQuestionAnswering)
 from .optimization import BertAdam
-from .file_utils import PYTORCH_PRETRAINED_BERT_CACHE
+from .file_utils import CACHE_DIRECTORY

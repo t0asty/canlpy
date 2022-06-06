@@ -23,7 +23,7 @@ import requests
 
 logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
-PYTORCH_PRETRAINED_BERT_CACHE = Path(os.getenv('PYTORCH_PRETRAINED_BERT_CACHE',
+CACHE_DIRECTORY = Path(os.getenv('CACHE_DIRECTORY',
                                                Path.home() / '.pytorch_pretrained_bert'))
 
 
@@ -51,7 +51,7 @@ def filename_to_url(filename: str, cache_dir: Union[str, Path] = None) -> Tuple[
     Raise ``FileNotFoundError`` if `filename` or its stored metadata do not exist.
     """
     if cache_dir is None:
-        cache_dir = PYTORCH_PRETRAINED_BERT_CACHE
+        cache_dir = CACHE_DIRECTORY
     if isinstance(cache_dir, Path):
         cache_dir = str(cache_dir)
 
@@ -79,7 +79,7 @@ def cached_path(url_or_filename: Union[str, Path], cache_dir: Union[str, Path] =
     make sure the file exists and then return the path.
     """
     if cache_dir is None:
-        cache_dir = PYTORCH_PRETRAINED_BERT_CACHE
+        cache_dir = CACHE_DIRECTORY
     if isinstance(url_or_filename, Path):
         url_or_filename = str(url_or_filename)
     if isinstance(cache_dir, Path):
@@ -168,7 +168,7 @@ def get_from_cache(url: str, cache_dir: Union[str, Path] = None) -> str:
     If it's not there, download it. Then return the path to the cached file.
     """
     if cache_dir is None:
-        cache_dir = PYTORCH_PRETRAINED_BERT_CACHE
+        cache_dir = CACHE_DIRECTORY
     if isinstance(cache_dir, Path):
         cache_dir = str(cache_dir)
 

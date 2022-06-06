@@ -1,7 +1,7 @@
 import unittest
 import torch
 from torch.nn import Embedding
-from canlpy.core.components.tokenization import BertTokenizer
+from canlpy.core.util.tokenization import BertTokenizer
 from canlpy.core.models.ernie.model import ErnieForMaskedLM
 from canlpy.previous_models.ernie.modeling import BertForMaskedLM
 from canlpy.helpers.ernie_helpers import load_name_to_QID,load_QID_to_eid, process_sentences

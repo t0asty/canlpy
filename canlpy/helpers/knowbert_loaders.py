@@ -8,13 +8,13 @@ import gzip
 import numpy as np
 from tqdm import tqdm
 
-from canlpy.helpers.knowbert_tokenizer.file_utils import cached_path
+from canlpy.core.util.file_utils import cached_path
 from canlpy.core.models.knowbert.model import KnowBert
 from canlpy.core.components.fusion.knowbert_fusion import SolderedKG
 from canlpy.core.components.fusion.knowbert_fusion.soldered_kg import EntityLinkingWithCandidateMentions
 from canlpy.core.models.knowbert.knowledge import WordNetAllEmbedding
-from canlpy.helpers.knowbert_tokenizer.vocabulary import Vocabulary
-from canlpy.helpers.knowbert_tokenizer.tokenizer import KnowBertBatchifier
+from canlpy.core.util.knowbert_tokenizer.vocabulary import Vocabulary
+from canlpy.core.util.knowbert_tokenizer.tokenizer import KnowBertBatchifier
 
 WORDNET_ARCHIVE = "https://allennlp.s3-us-west-2.amazonaws.com/knowbert/models/knowbert_wordnet_model.tar.gz"
 WORDNET_ENTITY_FILE = "https://allennlp.s3-us-west-2.amazonaws.com/knowbert/wordnet/entities.jsonl"

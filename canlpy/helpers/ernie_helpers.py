@@ -1,4 +1,4 @@
-from canlpy.core.components.tokenization import BertTokenizer
+from canlpy.core.util.tokenization import BertTokenizer
 from canlpy.helpers.tokens import TAGME_TOKEN
 from typing import List,Dict,Tuple
 import re 

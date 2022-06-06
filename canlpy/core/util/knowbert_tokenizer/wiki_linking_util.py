@@ -7,8 +7,9 @@ import spacy
 from spacy.lang.en import STOP_WORDS
 from spacy.lang.char_classes import LIST_PUNCT, LIST_ELLIPSES, LIST_QUOTES, LIST_CURRENCY
 
-from canlpy.helpers.knowbert_tokenizer.file_utils import cached_path
-from canlpy.helpers.knowbert_tokenizer.common import WhitespaceTokenizer, get_empty_candidates
+from canlpy.core.util.file_utils import cached_path
+from canlpy.core.util.knowbert_tokenizer.common import WhitespaceTokenizer, get_empty_candidates
+from canlpy.core.util.knowbert_tokenizer.bert_tokenizer_and_candidate_generator import MentionGenerator
 
 def prior_entity_candidates(candidates_file: str,
                             max_candidates:int = 30,
@@ -146,9 +147,6 @@ def enumerate_spans(sentence: List[str],
                 spans.append((start, end))
     return spans
 
-
-class MentionGenerator():
-    pass
 
 STOP_SYMBOLS = set().union(LIST_PUNCT, LIST_ELLIPSES, LIST_QUOTES, LIST_CURRENCY)
 def span_filter_func(span: List[str]):
