@@ -6,9 +6,10 @@ import torch.nn as nn
 import numpy as np
 
 from canlpy.core.models.knowbert.util import get_dtype_for_module, extend_attention_mask_for_bert
-from canlpy.core.models.knowbert.knowledge import WordNetAllEmbedding, EntityEmbedder
+from canlpy.core.components.fusion.knowbert_fusion import SolderedKG
 
 from pytorch_pretrained_bert.modeling import BertForPreTraining, BertLayer, BertLayerNorm, BertConfig, BertEncoder
+
 
 # KnowBert:
 #   Combines bert with one or more SolderedKG
@@ -24,7 +25,7 @@ from pytorch_pretrained_bert.modeling import BertForPreTraining, BertLayer, Bert
 
 class KnowBert(nn.Module):
     def __init__(self,
-                 soldered_kgs: Dict[str, nn.Module],
+                 soldered_kgs: Dict[str, SolderedKG],
                  soldered_layers: Dict[str, int],
                  bert_model_name: str,
                  mode: str = None,

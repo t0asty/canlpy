@@ -10,7 +10,7 @@ from torch.nn import CrossEntropyLoss, BCEWithLogitsLoss
 
 from canlpy.core.models.bert.model import BertEmbeddings, BertPooler, init_weights, LayerNorm
 from canlpy.core.models.ernie.components import ErnieEncoder
-#from canlpy.core.models.common.activation_functions import get_activation_function
+from canlpy.core.components.fusion.cokebert_fusion import DK_fusion
 
 logger = logging.getLogger(__name__)
 
@@ -451,30 +451,6 @@ class DK_knowledge(nn.Module):
     def forward(self, k):
         return self.k_v_linear(k)
 
-class DK_fusion(nn.Module):
-    def __init__(self, k_v_dim, layer_no):
-        super().__init__()
-        self.k_v_dim = k_v_dim
-        self.number = layer_no
-
-        self.leaky_relu = nn.LeakyReLU()
-        self.softmax = nn.Softmax(dim=layer_no+1)
-    
-    def forward(self, q_i, k, v):
-        attention = ((q_i * k).sum(self.number+2)).div(math.sqrt(self.k_v_dim))
-
-        attention = attention.masked_fill(attention==0, float('-10000'))
-        attention = self.softmax(self.leaky_relu(attention))
-        attention = attention.masked_fill(attention==float(1/attention.shape[-1]), float(0)) # don't need to
-
-
-        attention = attention.unsqueeze(self.number+1)
-
-        sentence_entity_reps = attention.matmul(v).squeeze(self.number+1)
-
-        return sentence_entity_reps
-
-
 class CokeBertForSequenceClassification(PreTrainedCokeBertModel):
     def __init__(self, config, num_labels=2):
         super().__init__(config)
@@ -530,7 +506,6 @@ class CokeBertForSequenceClassification(PreTrainedCokeBertModel):
             return loss
         else:
             return logits
-
 
 class CokeBertForEntityTyping(PreTrainedCokeBertModel):
     def __init__(self, config, num_labels=2):
