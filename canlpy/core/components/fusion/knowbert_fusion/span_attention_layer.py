@@ -1,12 +1,13 @@
 import torch
 import math
 
+import torch.nn as nn
 from pytorch_pretrained_bert.modeling import BertIntermediate, BertOutput, BertLayer, BertSelfOutput
 
-from canlpy.core.models.knowbert.util import get_dtype_for_module, extend_attention_mask_for_bert
+from canlpy.core.util.util import get_dtype_for_module, extend_attention_mask_for_bert
 from canlpy.core.models.bert.model import init_weights
 
-class SpanWordAttention(torch.nn.Module):
+class SpanWordAttention(nn.Module):
     def __init__(self, config):
         super().__init__()
         if config.hidden_size % config.num_attention_heads != 0:
@@ -76,7 +77,7 @@ class SpanWordAttention(torch.nn.Module):
         context_layer = context_layer.view(*new_context_layer_shape)
         return context_layer, attention_probs
 
-class SpanAttention(torch.nn.Module):
+class SpanAttention(nn.Module):
     def __init__(self, config):
         super().__init__()
         self.attention = SpanWordAttention(config)
@@ -89,7 +90,7 @@ class SpanAttention(torch.nn.Module):
         attention_output = self.output(span_output, input_tensor)
         return attention_output, attention_probs
 
-class SpanAttentionLayer(torch.nn.Module):
+class SpanAttentionLayer(nn.Module):
     # WARNING: does it's own init, so don't re-init
     def __init__(self, config):
         super().__init__()

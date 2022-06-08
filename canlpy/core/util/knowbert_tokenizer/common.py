@@ -1,14 +1,6 @@
 import spacy
 from spacy.tokens import Doc
 
-class MentionGenerator():
-    pass
-
-
-class EntityEmbedder():
-    pass
-
-
 def get_empty_candidates():
     """
     The mention generators always return at least one candidate, but signal

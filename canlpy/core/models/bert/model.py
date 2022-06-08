@@ -1,18 +1,17 @@
-import torch
-import torch.nn as nn
 import typing
 from typing import List,Dict,Tuple
 import os
 import json
 import copy
 import math
-from torch import nn
+import torch
+import torch.nn as nn
 from torch.nn import CrossEntropyLoss, BCEWithLogitsLoss
 import logging
 
 from torch import layer_norm
 
-from canlpy.core.models.common.activation_functions import get_activation_function
+from canlpy.core.components.activation_functions import get_activation_function
 
 #Standard Linear BERT Self-Attention with no feed_forward network (hidden_size->hidden_size)
 #NOTE: Later improvement would be to use PyTorch multi-head attention

@@ -12,6 +12,7 @@ from canlpy.core.models.bert.model import BertEmbeddings, BertPooler, init_weigh
 from canlpy.core.models.ernie.components import ErnieEncoder
 from canlpy.core.models.common.heads import BertOnlyMLMHead
 #from canlpy.core.models.common.activation_functions import get_activation_function
+from canlpy.core.components.fusion.cokebert_fusion import DK_fusion
 
 logger = logging.getLogger(__name__)
 
@@ -19,7 +20,7 @@ CONFIG_NAME = 'cokebert_config.json'
 WEIGHTS_NAME = 'pytorch_model.bin'
 MAPPING_FILE = 'mapping.json'
 
-class CokeBertConfig(object):
+class CokeBertConfig():
     """Configuration class to store the configuration of a `CokeBertModel`.
     """
     def __init__(self,
@@ -117,7 +118,6 @@ class CokeBertConfig(object):
         params['num_hidden_layers'] = len(params['layer_types'])
         return CokeBertConfig(**params)
 
-
 class PreTrainedCokeBertModel(nn.Module):
     """ An abstract class to handle weights initialization and
         a simple interface for dowloading and loading pretrained models.
@@ -145,17 +145,6 @@ class PreTrainedCokeBertModel(nn.Module):
             module.weight.data.fill_(1.0)
         if isinstance(module, nn.Linear) and module.bias is not None:
             module.bias.data.zero_()
-        
-        # if isinstance(module, (nn.Linear, nn.Embedding)):
-        #     # Slightly different from the TF version which uses truncated_normal for initialization
-        #     # cf https://github.com/pytorch/pytorch/pull/5617
-        #     module.weight.data.normal_(mean=0.0, std=self.config.initializer_range)
-        # elif isinstance(module, LayerNorm):
-        #     module.bias.data.zero_()
-        #     module.weight.data.fill_(1.0)
-        # if isinstance(module, nn.Linear) and module.bias is not None:
-        #     module.bias.data.zero_()
-
     @classmethod
     def from_pretrained(cls, dir_path, state_dict=None, cache_dir=None, *inputs, **kwargs):
         """
@@ -220,7 +209,6 @@ class PreTrainedCokeBertModel(nn.Module):
         logger.info(f"Unexpected keys are: \n {unexpected_keys}")
 
         return model, missing_keys
-
 
 class CokeBertModel(PreTrainedCokeBertModel):
     def __init__(self, config):
@@ -299,12 +287,6 @@ class DKEncoder(nn.Module):
     def __init__(self, k_v_dim, q_dim, no_layers):
         super(DKEncoder, self).__init__()
 
-        #self.k_v_linear_1 = nn.Linear(k_v_dim, k_v_dim, bias=False)
-        #self.k_v_linear_2 = nn.Linear(k_v_dim, k_v_dim, bias=False)
-        #self.v_linear_1 = nn.Linear(k_v_dim, k_v_dim, bias=False)
-        #self.v_linear_2 = nn.Linear(k_v_dim, k_v_dim, bias=False)
-        #self.q_linear_1 = nn.Linear(q_dim, k_v_dim, bias=True)
-        #self.q_linear_2 = nn.Linear(q_dim, k_v_dim, bias=True)
         layers = []
         for i in range(no_layers, 0, -1):
             layers.append(DKEncoder_layer(k_v_dim, q_dim, i))
@@ -377,55 +359,18 @@ class DKEncoder(nn.Module):
 
         return hidden_states_ent
 
-
 class DKEncoder_layer(nn.Module):
     def __init__(self, k_v_dim, q_dim, layer_no):
-        """
-        self.number = layer_no
-        self.k_v_dim = k_v_dim
-
-        self.k_v_linear = nn.Linear(k_v_dim, k_v_dim, bias=False)
-        self.v_linear = nn.Linear(k_v_dim, k_v_dim, bias=False)
-        self.q_linear = nn.Linear(q_dim, k_v_dim, bias=True)
-
-        self.softmax = nn.Softmax(dim=layer_no+1)
-        self.tanh = nn.Tanh()
-        self.leaky_relu = nn.LeakyReLU()
-        """
         super().__init__()
         self.text = DK_text(k_v_dim, q_dim, layer_no)
         self.knowledge = DK_knowledge(k_v_dim)
         self.fusion = DK_fusion(k_v_dim, layer_no)
 
-    """
-    def forward(self, q, k, v):
-        q_i = self.q_linear(q)
-        q_i = self.tanh(q_i)
-
-        for i in range(1, self.number+2):
-            q_i = q_i.unsqueeze(i)
-
-        k = self.k_v_linear(k)
-
-        attention = ((q_i * k).sum(self.number+2)).div(math.sqrt(self.k_v_dim))
-
-        attention = attention.masked_fill(attention==0, float('-10000'))
-        attention = self.softmax(self.LeakyReLU(attention))
-        attention = attention.masked_fill(attention==float(1/attention.shape[-1]), float(0)) # don't need to
-
-
-        attention = attention.unsqueeze(self.number+1)
-
-        sentence_entity_reps = attention.matmul(v).squeeze(self.number+1)
-
-        return sentence_entity_reps
-    """
     def forward(self, q, k, v):
         q_i = self.text(q)
         k = self.knowledge(k)
 
         return self.fusion(q_i, k, v)
-
 
 class DK_text(nn.Module):
     def __init__(self, k_v_dim, q_dim, layer_no):
@@ -451,30 +396,6 @@ class DK_knowledge(nn.Module):
     
     def forward(self, k):
         return self.k_v_linear(k)
-
-class DK_fusion(nn.Module):
-    def __init__(self, k_v_dim, layer_no):
-        super().__init__()
-        self.k_v_dim = k_v_dim
-        self.number = layer_no
-
-        self.leaky_relu = nn.LeakyReLU()
-        self.softmax = nn.Softmax(dim=layer_no+1)
-    
-    def forward(self, q_i, k, v):
-        attention = ((q_i * k).sum(self.number+2)).div(math.sqrt(self.k_v_dim))
-
-        attention = attention.masked_fill(attention==0, float('-10000'))
-        attention = self.softmax(self.leaky_relu(attention))
-        attention = attention.masked_fill(attention==float(1/attention.shape[-1]), float(0)) # don't need to
-
-
-        attention = attention.unsqueeze(self.number+1)
-
-        sentence_entity_reps = attention.matmul(v).squeeze(self.number+1)
-
-        return sentence_entity_reps
-
 
 class CokeBertForSequenceClassification(PreTrainedCokeBertModel):
     def __init__(self, config, num_labels=2):
@@ -531,7 +452,6 @@ class CokeBertForSequenceClassification(PreTrainedCokeBertModel):
             return loss
         else:
             return logits
-
 
 class CokeBertForEntityTyping(PreTrainedCokeBertModel):
     def __init__(self, config, num_labels=2):

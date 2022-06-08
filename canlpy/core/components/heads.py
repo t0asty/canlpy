@@ -2,7 +2,7 @@ import copy
 import torch
 import torch.nn as nn
 from canlpy.core.models.bert.model import LayerNorm
-from canlpy.core.models.common.activation_functions import get_activation_function
+from canlpy.core.components.activation_functions import get_activation_function
 
 class BertLMPredictionHead(nn.Module):
     def __init__(self, config, bert_model_embedding_weights):

@@ -32,18 +32,10 @@ import torch
 from torch.utils.data import TensorDataset, DataLoader, RandomSampler, SequentialSampler
 from torch.utils.data.distributed import DistributedSampler
 
-#from knowledge_bert.typing import BertTokenizer as BertTokenizer_label
-#from knowledge_bert.tokenization import BertTokenizer
-#from knowledge_bert.modeling import BertForEntityTyping
-#from ernie_clean import BertForEntityTyping
-#from knowledge_bert.optimization import BertAdam
-#from knowledge_bert.file_utils import PYTORCH_PRETRAINED_BERT_CACHE
-
-from canlpy.core.components.typing import BertTokenizer as BertTokenizer_label
-from canlpy.core.components.tokenization import BertTokenizer
+from canlpy.core.util.tokenization import BertTokenizer
 from canlpy.core.models.ernie.model import BertForEntityTyping
-from canlpy.core.components.optimization import BertAdam
-from canlpy.core.components.file_utils import PYTORCH_PRETRAINED_BERT_CACHE
+from canlpy.train.optimization import BertAdam
+from canlpy.core.util.file_utils import CACHE_DIRECTORY
 
 logging.basicConfig(format = '%(asctime)s - %(levelname)s - %(name)s -   %(message)s',
                     datefmt = '%m/%d/%Y %H:%M:%S',
@@ -429,7 +421,7 @@ def main():
 
     processor = TypingProcessor()
 
-    tokenizer_label = BertTokenizer_label.from_pretrained(args.ernie_model, do_lower_case=args.do_lower_case)
+    tokenizer_label = BertTokenizer.from_pretrained(args.ernie_model, do_lower_case=args.do_lower_case,label=True)
     tokenizer = BertTokenizer.from_pretrained(args.ernie_model, do_lower_case=args.do_lower_case)
 
     _, label_list, _ = processor.get_train_examples(args.data_dir)

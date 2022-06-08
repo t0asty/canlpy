@@ -2,9 +2,9 @@ from typing import Union, List,Dict
 import numpy as np
 import torch
 
-from canlpy.helpers.knowbert_tokenizer.bert_tokenizer_and_candidate_generator import BertTokenizerAndCandidateGenerator, truncate_sequence_pair
-from canlpy.helpers.knowbert_tokenizer.wiki_linking_util import WikiCandidateMentionGenerator
-from canlpy.helpers.knowbert_tokenizer.vocabulary import Vocabulary
+from canlpy.core.util.knowbert_tokenizer.bert_tokenizer_and_candidate_generator import BertTokenizerAndCandidateGenerator, truncate_sequence_pair
+from canlpy.core.util.knowbert_tokenizer.wiki_linking_util import WikiCandidateMentionGenerator
+from canlpy.core.util.knowbert_tokenizer.vocabulary import Vocabulary
 
 WIKI_ENTITY_VOCAB_FILE = "https://allennlp.s3-us-west-2.amazonaws.com/knowbert/wiki_entity_linking/vocabulary_wiki.tar.gz"
 

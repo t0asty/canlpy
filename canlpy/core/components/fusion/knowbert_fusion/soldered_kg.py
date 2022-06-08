@@ -3,14 +3,18 @@ import math
 import numpy as np
 
 import torch
-import torch.nn as  nn
-from canlpy.core.models.knowbert.span_extractor import SelfAttentiveSpanExtractor
-from canlpy.core.models.knowbert.span_attention_layer import SpanAttentionLayer
+import torch.nn as nn
+
+from canlpy.core.components.fusion import Fusion
+from canlpy.core.components.fusion.knowbert_fusion.span_extractor import SelfAttentiveSpanExtractor
+from canlpy.core.components.fusion.knowbert_fusion.span_attention_layer import SpanAttentionLayer
+
 from canlpy.core.models.bert.model import init_weights
-from canlpy.core.models.knowbert.util import get_dtype_for_module, extend_attention_mask_for_bert
+from canlpy.core.util.util import get_dtype_for_module, extend_attention_mask_for_bert
 from canlpy.core.models.knowbert.knowledge import WordNetAllEmbedding, EntityEmbedder
 from canlpy.core.models.knowbert.metrics import F1Metric
-from pytorch_pretrained_bert.modeling import BertForPreTraining, BertLayer, BertLayerNorm, BertConfig, BertEncoder
+
+from pytorch_pretrained_bert.modeling import BertLayerNorm, BertConfig, BertEncoder
 
 
 class DotAttentionWithPrior(nn.Module):
@@ -130,7 +134,7 @@ class DotAttentionWithPrior(nn.Module):
 
         return weighted_entity_embeddings
 
-class EntityDisambiguator(torch.nn.Module):
+class EntityDisambiguator(nn.Module):
     def __init__(self,
                  contextual_embedding_dim: int,
                  entity_embedding_dim: int,
@@ -658,7 +662,7 @@ class EntityLinkingWithCandidateMentions(EntityLinkingBase):
 
         return return_dict
 
-class SolderedKG(nn.Module):
+class SolderedKG(Fusion):
     def __init__(self,
                  entity_linker: nn.Module,
                  span_attention_config: Dict[str, int], 

@@ -32,11 +32,10 @@ import torch
 from torch.utils.data import TensorDataset, DataLoader, RandomSampler, SequentialSampler
 from torch.utils.data.distributed import DistributedSampler
 
-from canlpy.core.components.typing import BertTokenizer as BertTokenizer_label
-from canlpy.core.components.tokenization import BertTokenizer
+from canlpy.core.util.tokenization import BertTokenizer
 from canlpy.core.models.cokebert.model import CokeBertForEntityTyping
-from canlpy.core.components.optimization import BertAdam
-from canlpy.core.components.file_utils import PYTORCH_PRETRAINED_BERT_CACHE
+from canlpy.train.optimization import BertAdam
+from canlpy.core.util.file_utils import CACHE_DIRECTORY
 
 import time
 import pickle
@@ -622,7 +621,7 @@ def main():
 
     processor = TypingProcessor()
 
-    tokenizer_label = BertTokenizer_label.from_pretrained(args.ernie_model, do_lower_case=args.do_lower_case)
+    tokenizer_label = BertTokenizer.from_pretrained(args.ernie_model, do_lower_case=args.do_lower_case,label=True)
     tokenizer = BertTokenizer.from_pretrained(args.ernie_model, do_lower_case=args.do_lower_case)
 
     train_examples = None
@@ -645,7 +644,7 @@ def main():
 
     # Prepare model
     model, _ = CokeBertForEntityTyping.from_pretrained(args.ernie_model,
-              cache_dir=PYTORCH_PRETRAINED_BERT_CACHE / 'distributed_{}'.format(args.local_rank),
+              cache_dir=CACHE_DIRECTORY / 'distributed_{}'.format(args.local_rank),
               num_labels = len(label_list))
     if args.fp16:
         model.half()

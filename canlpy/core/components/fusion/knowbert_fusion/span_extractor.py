@@ -1,6 +1,5 @@
 import torch
 import torch.nn as nn
-from typing import Dict, Optional, Tuple, Union
 
 class SpanExtractor(nn.Module):
     """
@@ -173,7 +172,6 @@ class SelfAttentiveSpanExtractor(SpanExtractor):
             return attended_text_embeddings * span_indices_mask.unsqueeze(-1).to(dtype)
 
         return attended_text_embeddings
-
 
 def flatten_and_batch_shift_indices(indices: torch.Tensor,
                                     sequence_length: int) -> torch.Tensor:

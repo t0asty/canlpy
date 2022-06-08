@@ -11,8 +11,7 @@ import logging
 import canlpy.core.models.bert.model as bert
 from canlpy.core.models.bert.model import BertEmbeddings, BertPooler, LayerNorm
 from canlpy.core.models.ernie.components import ErnieLayer, ErnieLayerMix,ErnieEncoder
-from canlpy.core.models.common.heads import BertOnlyMLMHead,BertOnlyNSPHead,ErniePreTrainingHeads
-
+from canlpy.core.components.heads import BertOnlyMLMHead,BertOnlyNSPHead,ErniePreTrainingHeads
 
 logger = logging.getLogger(__name__)
 

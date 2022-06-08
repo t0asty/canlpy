@@ -13,7 +13,7 @@ from typing import Any, Callable, Dict, Iterable, List, Optional, Set, Union
 from typing import TextIO  # pylint: disable=unused-import
 
 from tqdm import tqdm
-from canlpy.helpers.knowbert_tokenizer.file_utils import cached_path
+from canlpy.core.util.file_utils import cached_path
 
 logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 

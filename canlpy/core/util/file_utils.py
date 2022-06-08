@@ -1,5 +1,7 @@
 """
 Utilities for working with the local dataset cache.
+This file is adapted from the AllenNLP library at https://github.com/allenai/allennlp
+Copyright by the AllenNLP authors.
 """
 
 import os
@@ -13,28 +15,19 @@ from typing import Optional, Tuple, Union, IO, Callable, Set
 from hashlib import sha256
 from functools import wraps
 
+from tqdm import tqdm
+
 import boto3
-import botocore
 from botocore.exceptions import ClientError
 import requests
 
-from tqdm import tqdm
-
 logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
+# CACHE_DIRECTORY = Path(os.getenv('CACHE_DIRECTORY',
+#                                                Path.home() / '.pytorch_pretrained_bert'))
 CACHE_ROOT = Path(os.getenv('CANLPY_CACHE_ROOT', Path.home() / '.canlpy'))
 CACHE_DIRECTORY = str(CACHE_ROOT / "cache")
-DEPRECATED_CACHE_DIRECTORY = str(CACHE_ROOT / "datasets")
-
-# This variable was deprecated in 0.7.2 since we use a single folder for caching
-# all types of files (datasets, models, etc.)
-DATASET_CACHE = CACHE_DIRECTORY
-
-# Warn if the user is still using the deprecated cache directory.
-if os.path.exists(DEPRECATED_CACHE_DIRECTORY):
-    logger = logging.getLogger(__name__) # pylint: disable=invalid-name
-    logger.warning(f"Deprecated cache directory found ({DEPRECATED_CACHE_DIRECTORY}).  "
-                   f"Please remove this directory from your system to free up space.")
+                                        
 
 
 def url_to_filename(url: str, etag: str = None) -> str:
@@ -54,13 +47,16 @@ def url_to_filename(url: str, etag: str = None) -> str:
 
     return filename
 
-def filename_to_url(filename: str, cache_dir: str = None) -> Tuple[str, str]:
+
+def filename_to_url(filename: str, cache_dir: Union[str, Path] = None) -> Tuple[str, str]:
     """
     Return the url and etag (which may be ``None``) stored for `filename`.
     Raise ``FileNotFoundError`` if `filename` or its stored metadata do not exist.
     """
     if cache_dir is None:
         cache_dir = CACHE_DIRECTORY
+    if isinstance(cache_dir, Path):
+        cache_dir = str(cache_dir)
 
     cache_path = os.path.join(cache_dir, filename)
     if not os.path.exists(cache_path):
@@ -77,7 +73,8 @@ def filename_to_url(filename: str, cache_dir: str = None) -> Tuple[str, str]:
 
     return url, etag
 
-def cached_path(url_or_filename: Union[str, Path], cache_dir: str = None) -> str:
+
+def cached_path(url_or_filename: Union[str, Path], cache_dir: Union[str, Path] = None) -> str:
     """
     Given something that might be a URL (or might be a local path),
     determine which. If it's a URL, download the file and cache it, and
@@ -88,8 +85,9 @@ def cached_path(url_or_filename: Union[str, Path], cache_dir: str = None) -> str
         cache_dir = CACHE_DIRECTORY
     if isinstance(url_or_filename, Path):
         url_or_filename = str(url_or_filename)
+    if isinstance(cache_dir, Path):
+        cache_dir = str(cache_dir)
 
-    url_or_filename = os.path.expanduser(url_or_filename)
     parsed = urlparse(url_or_filename)
 
     if parsed.scheme in ('http', 'https', 's3'):
@@ -105,16 +103,6 @@ def cached_path(url_or_filename: Union[str, Path], cache_dir: str = None) -> str
         # Something unknown
         raise ValueError("unable to parse {} as a URL or as a local path".format(url_or_filename))
 
-def is_url_or_existing_file(url_or_filename: Union[str, Path, None]) -> bool:
-    """
-    Given something that might be a URL (or might be a local path),
-    determine check if it's url or an existing file path.
-    """
-    if url_or_filename is None:
-        return False
-    url_or_filename = os.path.expanduser(str(url_or_filename))
-    parsed = urlparse(url_or_filename)
-    return parsed.scheme in ('http', 'https', 's3') or os.path.exists(url_or_filename)
 
 def split_s3_path(url: str) -> Tuple[str, str]:
     """Split a full s3 path into the bucket name and path."""
@@ -127,6 +115,7 @@ def split_s3_path(url: str) -> Tuple[str, str]:
     if s3_path.startswith("/"):
         s3_path = s3_path[1:]
     return bucket_name, s3_path
+
 
 def s3_request(func: Callable):
     """
@@ -146,29 +135,23 @@ def s3_request(func: Callable):
 
     return wrapper
 
-def get_s3_resource():
-    session = boto3.session.Session()
-    if session.get_credentials() is None:
-        # Use unsigned requests.
-        s3_resource = session.resource("s3", config=botocore.client.Config(signature_version=botocore.UNSIGNED))
-    else:
-        s3_resource = session.resource("s3")
-    return s3_resource
 
 @s3_request
 def s3_etag(url: str) -> Optional[str]:
     """Check ETag on S3 object."""
-    s3_resource = get_s3_resource()
+    s3_resource = boto3.resource("s3")
     bucket_name, s3_path = split_s3_path(url)
     s3_object = s3_resource.Object(bucket_name, s3_path)
     return s3_object.e_tag
 
+
 @s3_request
 def s3_get(url: str, temp_file: IO) -> None:
     """Pull a file directly from S3."""
-    s3_resource = get_s3_resource()
+    s3_resource = boto3.resource("s3")
     bucket_name, s3_path = split_s3_path(url)
     s3_resource.Bucket(bucket_name).download_fileobj(s3_path, temp_file)
+
 
 def http_get(url: str, temp_file: IO) -> None:
     req = requests.get(url, stream=True)
@@ -181,14 +164,16 @@ def http_get(url: str, temp_file: IO) -> None:
             temp_file.write(chunk)
     progress.close()
 
-# TODO(joelgrus): do we want to do checksums or anything like that?
-def get_from_cache(url: str, cache_dir: str = None) -> str:
+
+def get_from_cache(url: str, cache_dir: Union[str, Path] = None) -> str:
     """
     Given a URL, look for the corresponding dataset in the local cache.
     If it's not there, download it. Then return the path to the cached file.
     """
     if cache_dir is None:
         cache_dir = CACHE_DIRECTORY
+    if isinstance(cache_dir, Path):
+        cache_dir = str(cache_dir)
 
     os.makedirs(cache_dir, exist_ok=True)
 
@@ -238,16 +223,18 @@ def get_from_cache(url: str, cache_dir: str = None) -> str:
 
     return cache_path
 
+
 def read_set_from_file(filename: str) -> Set[str]:
     '''
     Extract a de-duped collection (set) of text from a file.
     Expected file format is one item per line.
     '''
     collection = set()
-    with open(filename, 'r') as file_:
+    with open(filename, 'r', encoding='utf-8') as file_:
         for line in file_:
             collection.add(line.rstrip())
     return collection
+
 
 def get_file_extension(path: str, dot=True, lower: bool = True):
     ext = os.path.splitext(path)[1]

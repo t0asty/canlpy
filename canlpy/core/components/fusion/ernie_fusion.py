@@ -1,5 +1,5 @@
 import torch.nn as nn
-from canlpy.core.models.common.activation_functions import get_activation_function
+from canlpy.core.components.activation_functions import get_activation_function
 from canlpy.core.models.bert.model import DenseSkipLayer
 from canlpy.core.components.fusion import Fusion
 

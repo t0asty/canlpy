@@ -34,14 +34,14 @@ from torch.utils.data.distributed import DistributedSampler
 
 # from knowledge_bert.tokenization import BertTokenizer
 
-from canlpy.core.components.tokenization import BertTokenizer
+from canlpy.core.util.tokenization import BertTokenizer
 from canlpy.core.models.ernie.model import ErnieForSequenceClassification
-from canlpy.core.components.optimization import BertAdam
-from canlpy.core.components.file_utils import PYTORCH_PRETRAINED_BERT_CACHE
+from canlpy.train.optimization import BertAdam
+from canlpy.core.util.file_utils import CACHE_DIRECTORY
 #from knowledge_bert.modeling import BertForSequenceClassification
 # from ernie_clean import BertForSequenceClassification
 # from knowledge_bert.optimization import BertAdam
-# from knowledge_bert.file_utils import PYTORCH_PRETRAINED_BERT_CACHE
+# from knowledge_bert.file_utils import CACHE_DIRECTORY
 
 logging.basicConfig(format='%(asctime)s - %(levelname)s - %(name)s -   %(message)s',
                     datefmt='%m/%d/%Y %H:%M:%S',
