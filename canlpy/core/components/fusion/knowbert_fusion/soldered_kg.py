@@ -134,7 +134,7 @@ class DotAttentionWithPrior(nn.Module):
 
         return weighted_entity_embeddings
 
-class EntityDisambiguator(torch.nn.Module):
+class EntityDisambiguator(nn.Module):
     def __init__(self,
                  contextual_embedding_dim: int,
                  entity_embedding_dim: int,
