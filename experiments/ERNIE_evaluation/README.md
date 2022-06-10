@@ -1,6 +1,14 @@
 # ERNIE Experiments
 
-You can find the datasets used by the authors of the ERNIE paper, download them into this folder from [here](https://drive.google.com/open?id=1HlWw7Q6-dFSm9jNSCh4VaBf1PlGqt9im) and run 
+First make sure that you have the pretrained ERNIE model in `canlpy/canlpy/pretrained_models/ernie`.  
+If that is not the case, you find the pretrained ERNIE model provided by the authors of the ERNIE paper, which is available from [here](https://drive.google.com/open?id=1DVGADbyEgjjpsUlmQaqN6i043SZvHPu5). Then run
+
+```shell
+tar -xvzf ernie_base.tar.gz
+```
+to extract it into `canlpy/canlpy/pretrained_models/ernie` 
+
+You can find the datasets for fine-tuning and the knowledge graph representation used by the authors of the ERNIE paper, download them into this folder from [here](https://drive.google.com/open?id=1HlWw7Q6-dFSm9jNSCh4VaBf1PlGqt9im) and run 
 
 ```shell
 tar -xvzf data.tar.gz

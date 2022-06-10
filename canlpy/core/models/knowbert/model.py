@@ -4,9 +4,14 @@ import math
 import torch
 import torch.nn as nn
 import numpy as np
+import yaml
+import tarfile
+import os
 
-from canlpy.core.util.util import get_dtype_for_module, extend_attention_mask_for_bert
+from canlpy.core.util.util import get_dtype_for_module, extend_attention_mask_for_bert, find_value
 from canlpy.core.components.fusion.knowbert_fusion import SolderedKG
+from canlpy.core.util.file_utils import cached_path
+from canlpy.core.util.knowbert_tokenizer.vocabulary import Vocabulary
 
 from pytorch_pretrained_bert.modeling import BertForPreTraining, BertLayer, BertLayerNorm, BertConfig, BertEncoder
 
@@ -98,6 +103,55 @@ class KnowBert(nn.Module):
         self.mode = mode
         #if mode = entity_linking,freeze all and then only unfreeze the SolderedKB layer, else, unfreeze the entire model
         self.unfreeze()
+    
+    @classmethod
+    def from_pretrained(cls,str_or_url,strict_load_archive=True):
+        model_file = cached_path(str_or_url)
+        tempdir = model_file+"_extracted"
+        if(not os.path.isdir(tempdir)):
+            os.makedirs(tempdir,exist_ok=True)
+
+            print(f"Extracting model archive in {tempdir}")
+            with tarfile.open(model_file, 'r:gz') as archive:
+                archive.extractall(tempdir)
+
+        weights_file = tempdir+'/weights.th'
+        config_file = tempdir+'/config.json'
+
+        #Use yaml to open json due to trailing comma
+        with open(config_file,'r') as f:
+            config = yaml.safe_load(f)
+
+        vocabulary_path = find_value(config,"vocabulary")["directory_path"]
+        entity_vocabulary = Vocabulary.from_files(vocabulary_path)
+        model_config = config["model"]
+
+        soldered_kgs = {}
+        for soldered_kg_name,soldered_kg_config in find_value(model_config,"soldered_kgs").items():
+            soldered_kgs[soldered_kg_name] = SolderedKG.from_config(soldered_kg_config,entity_vocabulary)
+
+        state_dict_remap = {}
+
+        for soldered_kg_name in soldered_kgs.keys():
+            before_key = f"{soldered_kg_name}_soldered_kg.entity_linker.disambiguator.span_extractor._global_attention._module.weight"
+            after_key = before_key.replace("._module","")
+            state_dict_remap[before_key]=after_key
+
+            before_key = f"{soldered_kg_name}_soldered_kg.entity_linker.disambiguator.span_extractor._global_attention._module.bias"
+            after_key = before_key.replace("._module","")
+            state_dict_remap[before_key]=after_key
+
+        layer_indices = find_value(model_config,"soldered_layers")
+
+        model = cls(soldered_kgs = soldered_kgs,
+                                        soldered_layers = layer_indices,
+                                        bert_model_name = model_config["bert_model_name"],
+                                        state_dict_file=weights_file,
+                                        strict_load_archive=strict_load_archive,
+                                        state_dict_map = state_dict_remap)
+        
+        return model
+
 
     def _remap_embeddings(self, token_type_embeddings):
         embed_dim = token_type_embeddings.shape[1]

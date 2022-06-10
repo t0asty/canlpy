@@ -10,8 +10,10 @@ from canlpy.core.components.fusion.knowbert_fusion.span_extractor import SelfAtt
 from canlpy.core.components.fusion.knowbert_fusion.span_attention_layer import SpanAttentionLayer
 
 from canlpy.core.models.bert.model import init_weights
-from canlpy.core.util.util import get_dtype_for_module, extend_attention_mask_for_bert
-from canlpy.core.models.knowbert.knowledge import WordNetAllEmbedding, EntityEmbedder
+from canlpy.core.util.util import get_dtype_for_module, extend_attention_mask_for_bert,find_value
+from canlpy.core.util.file_utils import cached_path
+
+from canlpy.core.models.knowbert.knowledge import WordNetAllEmbedding, EntityEmbedder,read_embeddings_from_text_file
 from canlpy.core.models.knowbert.metrics import F1Metric
 
 from pytorch_pretrained_bert.modeling import BertLayerNorm, BertConfig, BertEncoder
@@ -712,6 +714,50 @@ class SolderedKG(Fusion):
         self._init_kg_to_bert_projection()
 
         self._freeze_all = freeze
+
+    @classmethod
+    def from_config(cls,config,entity_vocabulary):
+        entity_linker_config = find_value(config,"entity_linker")
+        contextual_embedding_dim = entity_linker_config["contextual_embedding_dim"]
+
+        if("entity_embedding" in entity_linker_config):
+            entity_embedding_config = entity_linker_config["entity_embedding"]
+            entity_dim = entity_embedding_config["embedding_dim"]
+            compressed_embedding_file = cached_path(entity_embedding_config["pretrained_file"])
+            entity_embeddings = read_embeddings_from_text_file(compressed_embedding_file,embedding_dim=entity_dim,vocab=entity_vocabulary,namespace=entity_embedding_config["vocab_namespace"])
+
+        elif("concat_entity_embedder" in entity_linker_config):
+            entity_embedding_config = entity_linker_config["concat_entity_embedder"]
+            entity_linker_config.pop("concat_entity_embedder")
+            entity_embedding_config.pop("type",None)
+
+
+            entity_embedding_config["embedding_file"] = cached_path(entity_embedding_config["embedding_file"])
+            entity_embedding_config["entity_file"] = cached_path(entity_embedding_config["entity_file"])
+            entity_embedding_config["vocab_file"] = cached_path(entity_embedding_config["vocab_file"])
+
+            entity_embeddings = WordNetAllEmbedding(**entity_embedding_config)#.entity_embeddings
+        else:
+            raise ValueError("Cannot find embedding type in config file")
+
+
+        
+        entity_linker_config.pop("namespace",None)#Not needed
+        entity_linker_config.pop("type",None)#Not needed
+
+        entity_linker_config["entity_embedding"] = entity_embeddings
+        entity_linker_config["null_entity_id"] = entity_vocabulary.get_token_index('@@NULL@@', "entity")
+        #span_encoder_config = entity_linker_config["span_encoder_config"]
+
+        entity_linker = EntityLinkingWithCandidateMentions(**entity_linker_config)
+
+        span_attention_config = config["span_attention_config"]
+
+        soldered_kg = cls(entity_linker = entity_linker, 
+                            span_attention_config = span_attention_config,
+                            should_init_kg_to_bert_inverse = config["should_init_kg_to_bert_inverse"])
+
+        return soldered_kg
 
     def _init_kg_to_bert_projection(self):
         if not self.should_init_kg_to_bert_inverse:
