@@ -142,8 +142,7 @@ class TypingProcessor(DataProcessor):
             text_a = (line['sent'], [["SPAN", line["start"], line["end"]]])
             text_b = line['ents']
             label = line['labels']
-            #if guid != 51:
-            #    continue
+
             examples.append(
                 InputExample(guid=guid, text_a=text_a, text_b=text_b, label=label))
         return examples
@@ -292,7 +291,6 @@ def accuracy(out, l):
         yy2 = []
         top = max(x1)
         for i in range(len(x1)):
-            #if x1[i] > 0 or x1[i] == top:
             if x1[i] > 0:
                 yy1.append(i)
             if x2[i] > 0:
@@ -398,6 +396,7 @@ def main():
         n_gpu = 1
         # Initializes the distributed backend which will take care of sychronizing nodes/GPUs
         torch.distributed.init_process_group(backend='nccl')
+
     logger.info("device: {} n_gpu: {}, distributed training: {}, 16-bits training: {}".format(
         device, n_gpu, bool(args.local_rank != -1), args.fp16))
 
@@ -410,6 +409,7 @@ def main():
     random.seed(args.seed)
     np.random.seed(args.seed)
     torch.manual_seed(args.seed)
+
     if n_gpu > 0:
         torch.cuda.manual_seed_all(args.seed)
 
@@ -429,8 +429,7 @@ def main():
     num_train_steps = None
     train_examples, label_list, d = processor.get_train_examples(args.data_dir)
     label_list = sorted(label_list)
-    #class_weight = [min(d[x], 100) for x in label_list]
-    #logger.info(class_weight)
+
     S = []
     for l in label_list:
         s = []
@@ -444,13 +443,11 @@ def main():
             len(train_examples) / args.train_batch_size / args.gradient_accumulation_steps * args.num_train_epochs)
 
     # Prepare model
-    model, _ = BertForEntityTyping.from_pretrained(args.ernie_model,
+    model, _ = ErnieForEntityTyping.from_pretrained(args.ernie_model,
                cache_dir=CACHE_DIRECTORY / 'distributed_{}'.format(args.local_rank),
                num_labels = len(label_list))
-    #model = ERNIE
-    #if args.fp16:
-    #model.half()
     model.to(device)
+
     if args.local_rank != -1:
         try:
             from apex.parallel import DistributedDataParallel as DDP
@@ -470,9 +467,13 @@ def main():
         {'params': [p for n, p in param_optimizer if not any(nd in n for nd in no_decay)], 'weight_decay': 0.01},
         {'params': [p for n, p in param_optimizer if any(nd in n for nd in no_decay)], 'weight_decay': 0.0}
         ]
+
+
     t_total = num_train_steps
     if args.local_rank != -1:
         t_total = t_total // torch.distributed.get_world_size()
+
+    
     if args.fp16:
         try:
             from apex.optimizers import FP16_Optimizer
@@ -513,10 +514,12 @@ def main():
     if args.do_train:
         train_features = convert_examples_to_features(
             train_examples, label_list, args.max_seq_length, tokenizer_label, tokenizer, args.threshold)
+
         logger.info("***** Running training *****")
         logger.info("  Num examples = %d", len(train_examples))
         logger.info("  Batch size = %d", args.train_batch_size)
         logger.info("  Num steps = %d", num_train_steps)
+
         all_input_ids = torch.tensor([f.input_ids for f in train_features], dtype=torch.long)
         all_input_mask = torch.tensor([f.input_mask for f in train_features], dtype=torch.long)
         all_segment_ids = torch.tensor([f.segment_ids for f in train_features], dtype=torch.long)
@@ -524,25 +527,30 @@ def main():
         all_ent_mask = torch.tensor([f.ent_mask for f in train_features], dtype=torch.long)
         all_labels = torch.tensor([f.labels for f in train_features], dtype=torch.float)
         train_data = TensorDataset(all_input_ids, all_input_mask, all_segment_ids, all_input_ent, all_ent_mask, all_labels)
+
         if args.local_rank == -1:
             train_sampler = RandomSampler(train_data)
         else:
             train_sampler = DistributedSampler(train_data)
+
         train_dataloader = DataLoader(train_data, sampler=train_sampler, batch_size=args.train_batch_size)
+
 
         output_loss_file = os.path.join(args.output_dir, "loss")
         loss_fout = open(output_loss_file, 'w')
         model.train()
+
         for epoch in trange(int(args.num_train_epochs), desc="Epoch"):
             tr_loss = 0
             nb_tr_examples, nb_tr_steps = 0, 0
+            
             for step, batch in enumerate(tqdm(train_dataloader, desc="Iteration")):
                 batch = tuple(t.to(device) if i != 3 else t for i, t in enumerate(batch))
                 input_ids, input_mask, segment_ids, input_ent, ent_mask, labels = batch
                 input_ent = embed(input_ent+1).to(device)
                 with torch.cuda.amp.autocast():
-                    loss = model(input_ids, segment_ids, input_mask, input_ent.half(), ent_mask, labels.half())
-                #loss = model(input_ids, segment_ids, input_mask, input_ent, ent_mask, labels)
+                    loss = model(input_ids, segment_ids, input_mask, input_ent, ent_mask, labels)
+
                 if n_gpu > 1:
                     loss = loss.mean() # mean() to average on multi-gpu.
                 if args.gradient_accumulation_steps > 1:
@@ -556,21 +564,19 @@ def main():
                 loss_fout.write("{}\n".format(loss.item()*args.gradient_accumulation_steps))
                 tr_loss += loss.item()
                 nb_tr_examples += input_ids.size(0)
+
                 nb_tr_steps += 1
                 if (step + 1) % args.gradient_accumulation_steps == 0:
                     # modify learning rate with special warm up BERT uses
                     lr_this_step = args.learning_rate * warmup_linear(global_step/t_total, args.warmup_proportion)
                     for param_group in optimizer.param_groups:
                         param_group['lr'] = lr_this_step
-                    #optimizer.step()
+
                     scaler.step(optimizer)
                     optimizer.zero_grad()
                     scaler.update()
                     global_step += 1
-                    #if global_step % 150 == 0 and global_step > 0:
-                    #    model_to_save = model.module if hasattr(model, 'module') else model
-                    #    output_model_file = os.path.join(args.output_dir, "pytorch_model.bin_{}".format(global_step))
-                    #    torch.save(model_to_save.state_dict(), output_model_file)
+
             model_to_save = model.module if hasattr(model, 'module') else model
             output_model_file = os.path.join(args.output_dir, "pytorch_model.bin_{}".format(epoch))
             torch.save(model_to_save.state_dict(), output_model_file)

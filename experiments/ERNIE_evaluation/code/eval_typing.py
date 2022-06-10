@@ -19,23 +19,18 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import csv
 import os
 import logging
 import argparse
 import random
-from tqdm import tqdm, trange
 import simplejson as json
 
 import numpy as np
 import torch
-from torch.utils.data import TensorDataset, DataLoader, RandomSampler, SequentialSampler
-from torch.utils.data.distributed import DistributedSampler
+from torch.utils.data import TensorDataset, DataLoader, SequentialSampler
 
 from canlpy.core.util.tokenization import BertTokenizer
-from canlpy.core.models.ernie.model import BertForEntityTyping
-from canlpy.train.optimization import BertAdam
-from canlpy.core.util.file_utils import CACHE_DIRECTORY
+from canlpy.core.models.ernie.model import ErnieForEntityTyping
 
 logging.basicConfig(format = '%(asctime)s - %(levelname)s - %(name)s -   %(message)s',
                     datefmt = '%m/%d/%Y %H:%M:%S',
@@ -144,8 +139,7 @@ class TypingProcessor(DataProcessor):
             text_a = (line['sent'], [["SPAN", line["start"], line["end"]]])
             text_b = line['ents']
             label = line['labels']
-            #if guid != 51:
-            #    continue
+
             examples.append(
                 InputExample(guid=guid, text_a=text_a, text_b=text_b, label=label))
         return examples
@@ -251,13 +245,9 @@ def convert_examples_to_features(examples, label_list, max_seq_length, tokenizer
             logger.info("*** Example ***")
             logger.info("guid: %s" % (example.guid))
             logger.info("Entity: %s" % example.text_a[1])
-            #logger.info("Entity: %s" % example.text_a[0][example.text_a[1][1]:example.text_a[1][2]])
             logger.info("tokens: %s" % " ".join(
                     [str(x) for x in zip(tokens, ents)]))
             logger.info("input_ids: %s" % " ".join([str(x) for x in input_ids]))
-            #logger.info("input_mask: %s" % " ".join([str(x) for x in input_mask]))
-            #logger.info(
-            #        "segment_ids: %s" % " ".join([str(x) for x in segment_ids]))
             logger.info("label: %s %s" % (example.label, labels))
             logger.info(real_ents)
 
@@ -270,24 +260,6 @@ def convert_examples_to_features(examples, label_list, max_seq_length, tokenizer
                               labels=labels))
     return features
 
-
-def _truncate_seq_pair(tokens_a, tokens_b, ents_a, ents_b, max_length):
-    """Truncates a sequence pair in place to the maximum length."""
-
-    # This is a simple heuristic which will always truncate the longer sequence
-    # one token at a time. This makes more sense than truncating an equal percent
-    # of tokens from each, since if one sequence is very short then each token
-    # that's truncated likely contains more information than a longer sequence.
-    while True:
-        total_length = len(tokens_a) + len(tokens_b)
-        if total_length <= max_length:
-            break
-        if len(tokens_a) > len(tokens_b):
-            tokens_a.pop()
-            ents_a.pop()
-        else:
-            tokens_b.pop()
-            ents_b.pop()
 
 def accuracy(out, l):
     cnt = 0
@@ -426,8 +398,7 @@ def main():
 
     _, label_list, _ = processor.get_train_examples(args.data_dir)
     label_list = sorted(label_list)
-    #class_weight = [min(d[x], 100) for x in label_list]
-    #logger.info(class_weight)
+
     S = []
     for l in label_list:
         s = []
@@ -460,9 +431,10 @@ def main():
 
     for x, mark in file_mark:
         print(x, mark)
+
         output_model_file = os.path.join(args.output_dir, x)
         model_state_dict = torch.load(output_model_file)
-        model, _ = BertForEntityTyping.from_pretrained(args.ernie_model, state_dict=model_state_dict, num_labels=len(label_list))
+        model, _ = ErnieForEntityTyping.from_pretrained(args.ernie_model, state_dict=model_state_dict, num_labels=len(label_list))
         model.to(device)
 
         if mark:
@@ -471,12 +443,11 @@ def main():
             eval_examples = processor.get_test_examples(args.data_dir)
         eval_features = convert_examples_to_features(
             eval_examples, label_list, args.max_seq_length, tokenizer_label, tokenizer, args.threshold)
+        
         logger.info("***** Running evaluation *****")
         logger.info("  Num examples = %d", len(eval_examples))
         logger.info("  Batch size = %d", args.eval_batch_size)
-        # zeros = [0 for _ in range(args.max_seq_length)]
-        # zeros_ent = [0 for _ in range(100)]
-        # zeros_ent = [zeros_ent for _ in range(args.max_seq_length)]
+
         all_input_ids = torch.tensor([f.input_ids for f in eval_features], dtype=torch.long)
         all_input_mask = torch.tensor([f.input_mask for f in eval_features], dtype=torch.long)
         all_segment_ids = torch.tensor([f.segment_ids for f in eval_features], dtype=torch.long)
@@ -484,6 +455,7 @@ def main():
         all_ent_mask = torch.tensor([f.ent_mask for f in eval_features], dtype=torch.long)
         all_labels = torch.tensor([f.labels for f in eval_features], dtype=torch.float)
         eval_data = TensorDataset(all_input_ids, all_input_mask, all_segment_ids, all_input_ent, all_ent_mask, all_labels)
+
         # Run prediction for full data
         eval_sampler = SequentialSampler(eval_data)
         eval_dataloader = DataLoader(eval_data, sampler=eval_sampler, batch_size=args.eval_batch_size)
@@ -525,6 +497,7 @@ def main():
             if r == 0.:
                 return 0.
             return 2 * p * r / float( p + r )
+
         def loose_macro(true, pred):
             num_entities = len(true)
             p = 0.
@@ -537,6 +510,7 @@ def main():
             precision = p / num_entities
             recall = r / num_entities
             return precision, recall, f1( precision, recall)
+
         def loose_micro(true, pred):
             num_predicted_labels = 0.
             num_true_labels = 0.
@@ -559,10 +533,14 @@ def main():
                 'micro': loose_micro(true, pred)
                 }
 
+        
         if mark:
+            # results from dev set
             output_eval_file = os.path.join(args.output_dir, "eval_results_{}.txt".format(x.split("_")[-1]))
         else:
             output_eval_file = os.path.join(args.output_dir, "test_results_{}.txt".format(x.split("_")[-1]))
+
+
         with open(output_eval_file, "w") as writer:
             logger.info("***** Eval results *****")
             for key in sorted(result.keys()):
