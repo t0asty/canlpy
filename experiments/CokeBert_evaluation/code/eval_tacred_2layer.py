@@ -19,7 +19,6 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import csv
 import os
 import logging
 import argparse
@@ -29,21 +28,11 @@ import simplejson as json
 
 import numpy as np
 import torch
-from torch.utils.data import TensorDataset, DataLoader, RandomSampler, SequentialSampler
-from torch.utils.data.distributed import DistributedSampler
-
-#from knowledge_bert.tokenization import BertTokenizer
-#from knowledge_bert.modeling import BertForSequenceClassification
-#from knowledge_bert.modeling_new_n_CLS_comb200 import BertForSequenceClassification
-#from knowledge_bert.optimization import BertAdam
-#from knowledge_bert.file_utils import CACHE_DIRECTORY
+from torch.utils.data import TensorDataset, DataLoader, SequentialSampler
 
 from canlpy.core.util.tokenization import BertTokenizer
 from canlpy.core.models.cokebert.model import CokeBertForSequenceClassification
-from canlpy.train.optimization import BertAdam
-from canlpy.core.util.file_utils import CACHE_DIRECTORY
 
-import time
 import pickle
 import random
 
@@ -171,10 +160,8 @@ def convert_examples_to_features(examples, label_list, max_seq_length, tokenizer
             exit()
 
         if h[1] < t[1]:
-            #ex_text_a = ex_text_a[:h[1]] + "# "+h_name+" #" + ex_text_a[h[2]:t[1]] + "$ "+t_name+" $" + ex_text_a[t[2]:]
             ex_text_a = ex_text_a[:h[1]] + "∞ "+h_name+" π" + ex_text_a[h[2]:t[1]] + "º "+t_name+" ∂" + ex_text_a[t[2]:]
         else:
-            #ex_text_a = ex_text_a[:t[1]] + "$ "+t_name+" $" + ex_text_a[t[2]:h[1]] + "# "+h_name+" #" + ex_text_a[h[2]:]
             ex_text_a = ex_text_a[:t[1]] + "º "+t_name+" ∂" + ex_text_a[t[2]:h[1]] + "∞ "+h_name+" π" + ex_text_a[h[2]:]
 
         ent_pos = [x for x in example.text_b if x[-1]>threshold]
@@ -193,17 +180,10 @@ def convert_examples_to_features(examples, label_list, max_seq_length, tokenizer
         tokens_a, entities_a = tokenizer.tokenize(ex_text_a, ent_pos)
 
         tokens_b = None
-        if False:
-            tokens_b, entities_b = tokenizer.tokenize(example.text_b[0], [x for x in example.text_b[1] if x[-1]>threshold])
-            # Modifies `tokens_a` and `tokens_b` in place so that the total
-            # length is less than the specified length.
-            # Account for [CLS], [SEP], [SEP] with "- 3"
-            _truncate_seq_pair(tokens_a, tokens_b, entities_a, entities_b, max_seq_length - 3)
-        else:
-            # Account for [CLS] and [SEP] with "- 2"
-            if len(tokens_a) > max_seq_length - 2:
-                tokens_a = tokens_a[:(max_seq_length - 2)]
-                entities_a = entities_a[:(max_seq_length - 2)]
+        # Account for [CLS] and [SEP] with "- 2"
+        if len(tokens_a) > max_seq_length - 2:
+            tokens_a = tokens_a[:(max_seq_length - 2)]
+            entities_a = entities_a[:(max_seq_length - 2)]
 
         # The convention in BERT is:
         # (a) For sequence pairs:
@@ -277,17 +257,6 @@ def convert_examples_to_features(examples, label_list, max_seq_length, tokenizer
                     "segment_ids: %s" % " ".join([str(x) for x in segment_ids]))
             logger.info("label: %s (id = %d)" % (example.label, label_id))
 
-        #if "π" not in ex_text_a or "∞" not in ex_text_a or "º" not in ex_text_a or "∂" not in ex_text_a:
-        #if 1170 not in input_ids or 1601 not in input_ids or 1089 not in input_ids or 1592 not in input_ids:
-        #    #1170, 1601, 1089, 1592
-        #    print("======")
-        #    print(tokens)
-        #    print("-----")
-        #    print(input_ids)
-        #    print("======")
-        #    continue
-            #exit()
-
         features.append(
                 InputFeatures(input_ids=input_ids,
                               input_mask=input_mask,
@@ -330,33 +299,14 @@ def warmup_linear(x, warmup=0.002):
 
 def load_ent_emb_static():
 
-    #with open('code/knowledge_bert/load_data_small/e1_e2_list_2D_Tensor_tacred.pkl', 'rb') as f:
     with open('./data/load_data_n/e1_e2_list_2D_Tensor.pkl', 'rb') as f:
-    #with open('code/knowledge_bert/load_data/e1_e2_list_2D_Tensor.pkl', 'rb') as f:
-    #with open('code/knowledge_bert/load_data_test/e1_e2_list_2D_Tensor.pkl', 'rb') as f:
-    #with open('code/knowledge_bert/load_data/e1_e2.pkl', 'rb') as f:
-    #with open('code/knowledge_bert/load_data_test/e1_e2.pkl', 'rb') as f:
         ent_neighbor = pickle.load(f)
 
-    #with open('code/knowledge_bert/load_data_small/e1_r_list_2D_Tensor_tacred.pkl', 'rb') as f:
     with open('./data/load_data_n/e1_r_list_2D_Tensor.pkl', 'rb') as f:
-    #with open('code/knowledge_bert/load_data/e1_r_list_2D_Tensor.pkl', 'rb') as f:
-    #with open('code/knowledge_bert/load_data_test/e1_r_list_2D_Tensor.pkl', 'rb') as f:
-    #with open('code/knowledge_bert/load_data/e1_r.pkl', 'rb') as f:
-    #with open('code/knowledge_bert/load_data_test/e1_r.pkl', 'rb') as f:
         ent_r = pickle.load(f)
 
-    #with open('code/knowledge_bert/load_data_small/e1_outORin_list_2D_Tensor_tacred.pkl', 'rb') as f:
     with open('./data/load_data_n/e1_outORin_list_2D_Tensor.pkl', 'rb') as f:
-    #with open('code/knowledge_bert/load_data/e1_outORin_list_2D_Tensor.pkl', 'rb') as f:
-    #with open('code/knowledge_bert/load_data_test/e1_outORin_list_2D_Tensor.pkl', 'rb') as f:
-    #with open('code/knowledge_bert/load_data/e1_outORin.pkl', 'rb') as f:
-    #with open('code/knowledge_bert/load_data_test/e1_outORin.pkl', 'rb') as f:
         ent_outORin = pickle.load(f)
-
-    #ent_neighbor = torch.nn.Embedding.from_pretrained(ent_neighbor)
-    #ent_r = torch.nn.Embedding.from_pretrained(ent_r)
-    #ent_outORin = torch.nn.Embedding.from_pretrained(ent_outORin)
 
     return ent_neighbor, ent_r, ent_outORin
 
@@ -366,14 +316,11 @@ def load_knowledge():
     vecs = []
     vecs.append([0]*100) # CLS
     with open("./data/kg_embed/entity2vec.vec", 'r') as fin:
-    #with open("kg_embed/entity2vec.del", 'r') as fin:
         for line in fin:
             vec = line.strip().split('\t')
             vec = [float(x) for x in vec]
             vecs.append(vec)
     embed_ent = torch.FloatTensor(vecs)
-    #embed = torch.nn.Embedding.from_pretrained(embed)
-    #logger.info("Shape of entity embedding: "+str(embed.weight.size()))
     del vecs
 
 
@@ -381,39 +328,21 @@ def load_knowledge():
     vecs = []
     vecs.append([0]*100) # CLS
     with open("./data/kg_embed/relation2vec.vec", 'r') as fin:
-    #with open("kg_embed/relation2vec.del", 'r') as fin:
         for line in fin:
             vec = line.strip().split('\t')
             vec = [float(x) for x in vec]
             vecs.append(vec)
     embed_r = torch.FloatTensor(vecs)
-    #embed = torch.nn.Embedding.from_pretrained(embed)
-    #logger.info("Shape of entity embedding: "+str(embed.weight.size()))
     del vecs
-
-
-    #embed_ent = torch.nn.Embedding.from_pretrained(embed_ent)
-    #embed_r = torch.nn.Embedding.from_pretrained(embed_r)
 
     return embed_ent, embed_r
 
 
 
 def load_k_v_queryR_small(input_ent):
-        #print(input_ent)
-        #print(input_ent.shape)
-        #exit()
         input_ent = input_ent.cpu()
 
-        #if input_ent.shape[0]>1:
-        #print(input_ent)
-        #print(input_ent.shape)
-        #print("======")
-
         ent_pos_s = torch.nonzero(input_ent)
-        #print(ent_pos_s)
-        #print(ent_pos_s.shape)
-        #print("======")
 
         max_entity=0
         value=0
@@ -428,28 +357,12 @@ def load_k_v_queryR_small(input_ent):
             else:
                 last_part+=1
         max_entity = max(last_part,max_entity)
-        #print("\n")
-        #print(max_entity)
-        #print("======")
-
-        #ents = input_ent[input_ent!=0]
         new_input_ent = list()
         for i_th, ten in enumerate(input_ent):
             ten_ent = ten[ten!=0]
             new_input_ent.append( torch.cat( (ten_ent,( torch.LongTensor( [0]*(max_entity-ten_ent.shape[0]) ) ) ) ) )
-            #print(new_input_ent[i_th].shape)
-            #print("---------------")
-            #print(torch.nonzero(ten))
-            #non_ = torch.nonzero(ten)
-            #print(torch.nonzero(input_ent[i_th]),
-            #torch.LongTensor([0]*max_entity-input_ent[i_th]))
-        #print(new_input_ent)
-        #print("======")
-        input_ent = torch.stack(new_input_ent)
-        #print(input_ent)
-        #print(input_ent.shape)
-        #exit()
 
+        input_ent = torch.stack(new_input_ent)
 
         #Neighbor
         input_ent_neighbor = torch.index_select(ent_neighbor,0,input_ent.reshape(input_ent.shape[0]*input_ent.shape[1])).long()
@@ -495,7 +408,6 @@ def load_k_v_queryR_small(input_ent):
 print("Load Emb ...")
 embed_ent, embed_r = load_knowledge()
 ent_neighbor, ent_r, ent_outORin = load_ent_emb_static()
-#ent_neighbor, ent_r, ent_outORin = load_ent_emb_dynamic()
 print("Finsh loading Emb")
 
 
@@ -643,25 +555,8 @@ def main():
 
     tokenizer = BertTokenizer.from_pretrained(args.ernie_model, do_lower_case=args.do_lower_case)
 
-    train_examples = None
-    num_train_steps = None
-    train_examples, label_list = processor.get_train_examples(args.data_dir)
+    _, label_list = processor.get_train_examples(args.data_dir)
     label_list = sorted(label_list)
-
-    '''
-    vecs = []
-    vecs.append([0]*100)
-    with open("kg_embed/entity2vec.vec", 'r') as fin:
-        for line in fin:
-            vec = line.strip().split('\t')
-            vec = [float(x) for x in vec]
-            vecs.append(vec)
-    embed = torch.FloatTensor(vecs)
-    embed = torch.nn.Embedding.from_pretrained(embed)
-
-    logger.info("Shape of entity embedding: "+str(embed.weight.size()))
-    del vecs
-    '''
 
     filenames = os.listdir(args.output_dir)
     filenames = [x for x in filenames if "pytorch_model.bin_" in x]
@@ -703,9 +598,7 @@ def main():
         logger.info("***** Running evaluation *****")
         logger.info("  Num examples = %d", len(eval_examples))
         logger.info("  Batch size = %d", args.eval_batch_size)
-        # zeros = [0 for _ in range(args.max_seq_length)]
-        # zeros_ent = [0 for _ in range(100)]
-        # zeros_ent = [zeros_ent for _ in range(args.max_seq_length)]
+
         all_input_ids = torch.tensor([f.input_ids for f in eval_features], dtype=torch.long)
         all_input_mask = torch.tensor([f.input_mask for f in eval_features], dtype=torch.long)
         all_segment_ids = torch.tensor([f.segment_ids for f in eval_features], dtype=torch.long)
@@ -725,8 +618,6 @@ def main():
 
             input_ent = input_ent+1
 
-
-            #input_ent = embed(input_ent+1) # -1 -> 0
             input_ent = input_ent.to(device) # -1 -> 0
             input_ids = input_ids.to(device)
             input_mask = input_mask.to(device)
@@ -734,40 +625,21 @@ def main():
             ent_mask = ent_mask.to(device)
             label_ids = label_ids.to(device)
 
-            #k,v = load_k_v_queryR_small(input_ent)
             k_1, v_1, k_2, v_2 = load_k_v_queryR_small(input_ent)
 
-            ####test
-            if int(input_ent[input_ent!=0].shape[0]) == 0: ###open or not?
+            # input entity missing:
+            if int(input_ent[input_ent!=0].shape[0]) == 0:
                 print("None ent")
-                #print(input_ent)
                 print(input_ent.shape)
-                #print("------------")
-                #k,v = load_k_v_queryR_small(input_ent)
-                #print(k)
-                #print(k.shape)
-                #print("------------")
-                #print(v)
-                #print(v.shape)
-                #continue
                 k_1 = torch.zeros(input_ent.shape[0],1,1,100).cuda()#.half()
                 v_1 = torch.zeros(input_ent.shape[0],1,1,100).cuda()#.half()
                 k_2 = torch.zeros(input_ent.shape[0],1,1,1,100).cuda()#.half()
                 v_2 = torch.zeros(input_ent.shape[0],1,1,1,100).cuda()#.half()
-            '''
-            else:
-                #print(k_2)
-                print(k_1.shape)
-                print(k_2.shape)
-                exit()
-            '''
 
 
             with torch.no_grad():
-                #tmp_eval_loss = model(input_ids, segment_ids, input_mask, input_ent, ent_mask, label_ids, k.half(), v.half())
                 try:
                     tmp_eval_loss = model(input_ids, segment_ids, input_mask, input_ent, ent_mask, label_ids, [(k_1, v_1), (k_2, v_2)])
-                    #logits = model(input_ids, segment_ids, input_mask, input_ent, ent_mask, None, k.half(), v.half())
                     logits = model(input_ids, segment_ids, input_mask, input_ent, ent_mask, None, [(k_1, v_1), (k_2, v_2)])
                 except ValueError:
                     continue
