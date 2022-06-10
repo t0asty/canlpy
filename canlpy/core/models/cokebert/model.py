@@ -10,6 +10,8 @@ from torch.nn import CrossEntropyLoss, BCEWithLogitsLoss
 
 from canlpy.core.models.bert.model import BertEmbeddings, BertPooler, init_weights, LayerNorm
 from canlpy.core.models.ernie.components import ErnieEncoder
+from canlpy.core.models.common.heads import BertOnlyMLMHead
+#from canlpy.core.models.common.activation_functions import get_activation_function
 from canlpy.core.components.fusion.cokebert_fusion import DK_fusion
 
 logger = logging.getLogger(__name__)
@@ -261,7 +263,7 @@ class CokeBertModel(PreTrainedCokeBertModel):
         if len(input_ent[input_ent!=0]) == 0:
             # no input entities -> return 0s
             # TODO: get shape from config
-            hidden_states_ent = torch.zeros(input_ent.shape[0], input_ent.shape[1],200).cuda()#.half()
+            hidden_states_ent = torch.zeros(input_ent.shape[0], input_ent.shape[1],200)#.cuda()#.half()
         else:
 
             hidden_states_ent = self.dk_encoder(input_ent, hidden_states, k_v_s) #[(k_1, v_1), (k_2, v_2)]
@@ -302,7 +304,7 @@ class DKEncoder(nn.Module):
             layer = self.layers[i]
             combined = layer(q, k, v)
 
-        hidden_states_ent = torch.zeros(input_ent.shape[0], input_ent.shape[1], self.k_v_dim*2).cuda()
+        hidden_states_ent = torch.zeros(input_ent.shape[0], input_ent.shape[1], self.k_v_dim*2)#.cuda()
         ent_pos_s = torch.nonzero(input_ent) # id start from 0
 
         for batch in range(input_ent.shape[0]):
@@ -434,3 +436,57 @@ class CokeBertForEntityTyping(PreTrainedCokeBertModel):
             return loss
         else:
             return logits
+
+class CokeBertForMaskedLM(PreTrainedCokeBertModel):
+    """BERT model with the masked language modeling head.
+    This module comprises the BERT model followed by the masked language modeling head.
+    Params:
+        config: a BertConfig class instance with the configuration to build a new model.
+    Inputs:
+        `input_ids`: a torch.LongTensor of shape [batch_size, sequence_length]
+            with the word token indices in the vocabulary(see the tokens preprocessing logic in the scripts
+            `extract_features.py`, `run_classifier.py` and `run_squad.py`)
+        `token_type_ids`: an optional torch.LongTensor of shape [batch_size, sequence_length] with the token
+            types indices selected in [0, 1]. Type 0 corresponds to a `sentence A` and type 1 corresponds to
+            a `sentence B` token (see BERT paper for more details).
+        `attention_mask`: an optional torch.LongTensor of shape [batch_size, sequence_length] with indices
+            selected in [0, 1]. It's a mask to be used if the input sequence length is smaller than the max
+            input sequence length in the current batch. It's the mask that we typically use for attention when
+            a batch has varying length sentences.
+        `masked_lm_labels`: masked language modeling labels: torch.LongTensor of shape [batch_size, sequence_length]
+            with indices selected in [-1, 0, ..., vocab_size]. All labels set to -1 are ignored (masked), the loss
+            is only computed for the labels set in [0, ..., vocab_size]
+    Outputs:
+        if `masked_lm_labels` is `None`:
+            Outputs the masked language modeling loss.
+        if `masked_lm_labels` is `None`:
+            Outputs the masked language modeling logits of shape [batch_size, sequence_length, vocab_size].
+    Example usage:
+    ```python
+    # Already been converted into WordPiece token ids
+    input_ids = torch.LongTensor([[31, 51, 99], [15, 5, 0]])
+    input_mask = torch.LongTensor([[1, 1, 1], [1, 1, 0]])
+    token_type_ids = torch.LongTensor([[0, 0, 1], [0, 1, 0]])
+    config = BertConfig(vocab_size_or_config_json_file=32000, hidden_size=768,
+        num_hidden_layers=12, num_attention_heads=12, intermediate_size=3072)
+    model = BertForMaskedLM(config)
+    masked_lm_logits_scores = model(input_ids, token_type_ids, input_mask)
+    ```
+    """
+    def __init__(self, config):
+        super().__init__(config)
+        self.model = CokeBertModel(config)
+        self.cls = BertOnlyMLMHead(config, self.model.embeddings.word_embeddings.weight)
+        self.apply(self.init_weights)
+
+    def forward(self, input_ids, input_ents, ent_mask=None, token_type_ids=None, attention_mask=None, masked_lm_labels=None, k_v_s=None):
+        sequence_output, _ = self.model(input_ids, token_type_ids, attention_mask, input_ents, ent_mask,
+                                       output_all_encoded_layers=False, k_v_s=k_v_s)
+        prediction_scores = self.cls(sequence_output)
+
+        if masked_lm_labels is not None:
+            loss_fct = CrossEntropyLoss(ignore_index=-1)
+            masked_lm_loss = loss_fct(prediction_scores.view(-1, self.config.vocab_size), masked_lm_labels.view(-1))
+            return masked_lm_loss
+        else:
+            return prediction_scores

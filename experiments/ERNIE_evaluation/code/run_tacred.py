@@ -32,12 +32,6 @@ import torch
 from torch.utils.data import TensorDataset, DataLoader, RandomSampler, SequentialSampler
 from torch.utils.data.distributed import DistributedSampler
 
-#from knowledge_bert.tokenization import BertTokenizer
-#from knowledge_bert.modeling import BertForSequenceClassification
-#from knowledge_bert.optimization import BertAdam
-#from knowledge_bert.file_utils import CACHE_DIRECTORY
-
-#from ernie_clean import BertForSequenceClassification#ERNIE, 
 from canlpy.core.util.tokenization import BertTokenizer
 from canlpy.core.models.ernie.model import ErnieForSequenceClassification
 from canlpy.train.optimization import BertAdam
@@ -129,7 +123,7 @@ class TacredProcessor(DataProcessor):
             for x in line['ents']:
                 if x[1] == 1:
                     x[1] = 0
-                    #print(line['text'][x[1]:x[2]].encode("utf-8"))
+
             text_a = (line['text'], line['ents'])
             label = line['label']
             examples.append(
@@ -157,8 +151,7 @@ def convert_examples_to_features(examples, label_list, max_seq_length, tokenizer
         h, t = example.text_a[1]
         h_name = ex_text_a[h[1]:h[2]]
         t_name = ex_text_a[t[1]:t[2]]
-        #ex_text_a = ex_text_a.replace(h_name, "# "+h_name+" #", 1)
-        #ex_text_a = ex_text_a.replace(t_name, "$ "+t_name+" $", 1)
+
         # Add [HD] and [TL], which are "#" and "$" respectively.
         if h[1] < t[1]:
             ex_text_a = ex_text_a[:h[1]] + "# "+h_name+" #" + ex_text_a[h[2]:t[1]] + "$ "+t_name+" $" + ex_text_a[t[2]:]
@@ -179,32 +172,13 @@ def convert_examples_to_features(examples, label_list, max_seq_length, tokenizer
             x[1] += cnt
             x[2] += cnt
         tokens_a, entities_a = tokenizer.tokenize(ex_text_a, ent_pos)
-        '''
-        cnt = 0
-        for x in entities_a:
-            if x != "UNK":
-                cnt += 1
-        if cnt != len(ent_pos) and ent_pos[0][0] != 'Q46809':
-            print(cnt, len(ent_pos))
-            print(ex_text_a)
-            print(ent_pos)
-            for x in ent_pos:
-                print(ex_text_a[x[1]:x[2]])
-            exit(1)
-        '''
 
         tokens_b = None
-        if False:
-            tokens_b, entities_b = tokenizer.tokenize(example.text_b[0], [x for x in example.text_b[1] if x[-1]>threshold])
-            # Modifies `tokens_a` and `tokens_b` in place so that the total
-            # length is less than the specified length.
-            # Account for [CLS], [SEP], [SEP] with "- 3"
-            _truncate_seq_pair(tokens_a, tokens_b, entities_a, entities_b, max_seq_length - 3)
-        else:
-            # Account for [CLS] and [SEP] with "- 2"
-            if len(tokens_a) > max_seq_length - 2:
-                tokens_a = tokens_a[:(max_seq_length - 2)]
-                entities_a = entities_a[:(max_seq_length - 2)]
+
+        # Account for [CLS] and [SEP] with "- 2"
+        if len(tokens_a) > max_seq_length - 2:
+            tokens_a = tokens_a[:(max_seq_length - 2)]
+            entities_a = entities_a[:(max_seq_length - 2)]
 
         # The convention in BERT is:
         # (a) For sequence pairs:
@@ -396,10 +370,7 @@ def main():
     parser.add_argument('--threshold', type=float, default=.3)
 
     args = parser.parse_args()
-
     processors = TacredProcessor
-
-    num_labels_task = 80
 
     if args.local_rank == -1 or args.no_cuda:
         device = torch.device("cuda" if torch.cuda.is_available() and not args.no_cuda else "cpu")
@@ -410,6 +381,7 @@ def main():
         n_gpu = 1
         # Initializes the distributed backend which will take care of sychronizing nodes/GPUs
         torch.distributed.init_process_group(backend='nccl')
+
     logger.info("device: {} n_gpu: {}, distributed training: {}, 16-bits training: {}".format(
         device, n_gpu, bool(args.local_rank != -1), args.fp16))
 
@@ -422,6 +394,7 @@ def main():
     random.seed(args.seed)
     np.random.seed(args.seed)
     torch.manual_seed(args.seed)
+
     if n_gpu > 0:
         torch.cuda.manual_seed_all(args.seed)
 
@@ -447,10 +420,10 @@ def main():
         len(train_examples) / args.train_batch_size / args.gradient_accumulation_steps * args.num_train_epochs)
 
     # Prepare model
-    model, _ = BertForSequenceClassification.from_pretrained(args.ernie_model,
+    model, _ = ErnieForSequenceClassification.from_pretrained(args.ernie_model,
               cache_dir=CACHE_DIRECTORY / 'distributed_{}'.format(args.local_rank),
               num_labels = num_labels)
-    #model = ERNIE
+
     if args.fp16:
         model.half()
     model.to(device)
@@ -516,14 +489,11 @@ def main():
                 vecs.append(vec)
         embed = torch.FloatTensor(vecs)
         embed = torch.nn.Embedding.from_pretrained(embed)
-        #embed = torch.nn.Embedding(5041175, 100)
 
         logger.info("Shape of entity embedding: "+str(embed.weight.size()))
         del vecs
 
-        # zeros = [0 for _ in range(args.max_seq_length)]
-        # zeros_ent = [0 for _ in range(100)]
-        # zeros_ent = [zeros_ent for _ in range(args.max_seq_length)]
+
         all_input_ids = torch.tensor([f.input_ids for f in train_features], dtype=torch.long)
         all_input_mask = torch.tensor([f.input_mask for f in train_features], dtype=torch.long)
         all_segment_ids = torch.tensor([f.segment_ids for f in train_features], dtype=torch.long)
@@ -539,7 +509,9 @@ def main():
 
         output_loss_file = os.path.join(args.output_dir, "loss")
         loss_fout = open(output_loss_file, 'w')
+
         model.train()
+
         for _ in trange(int(args.num_train_epochs), desc="Epoch"):
             tr_loss = 0
             nb_tr_examples, nb_tr_steps = 0, 0
@@ -562,6 +534,7 @@ def main():
                 tr_loss += loss.item()
                 nb_tr_examples += input_ids.size(0)
                 nb_tr_steps += 1
+
                 if (step + 1) % args.gradient_accumulation_steps == 0:
                     # modify learning rate with special warm up BERT uses
                     lr_this_step = args.learning_rate * warmup_linear(global_step/t_total, args.warmup_proportion)
@@ -570,6 +543,8 @@ def main():
                     optimizer.step()
                     optimizer.zero_grad()
                     global_step += 1
+            
+            # save model checkpoint
             model_to_save = model.module if hasattr(model, 'module') else model
             output_model_file = os.path.join(args.output_dir, "pytorch_model.bin_{}".format(global_step))
             torch.save(model_to_save.state_dict(), output_model_file)

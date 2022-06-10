@@ -24,19 +24,13 @@ import logging
 import argparse
 import random
 from tqdm import tqdm, trange
-import simplejson as json
 
+import simplejson as json
 import numpy as np
 import torch
 from torch.utils.data import TensorDataset, DataLoader, RandomSampler, SequentialSampler
 from torch.utils.data.distributed import DistributedSampler
 
-#from knowledge_bert.tokenization import BertTokenizer
-#from knowledge_bert.modeling import BertForSequenceClassification
-#from knowledge_bert.optimization import BertAdam
-#from knowledge_bert.file_utils import CACHE_DIRECTORY
-
-#from ernie_clean import BertForSequenceClassification #ERNIE
 from canlpy.core.util.tokenization import BertTokenizer
 from canlpy.core.models.ernie.model import ErnieForSequenceClassification
 from canlpy.train.optimization import BertAdam
@@ -378,11 +372,10 @@ def main():
     parser.add_argument('--threshold', type=float, default=.3)
 
     args = parser.parse_args()
-
     processors = FewrelProcessor
-
     num_labels_task = 80
 
+    # set devices
     if args.local_rank == -1 or args.no_cuda:
         device = torch.device("cuda" if torch.cuda.is_available() and not args.no_cuda else "cpu")
         n_gpu = torch.cuda.device_count()
@@ -392,6 +385,8 @@ def main():
         n_gpu = 1
         # Initializes the distributed backend which will take care of sychronizing nodes/GPUs
         torch.distributed.init_process_group(backend='nccl')
+
+    
     logger.info("device: {} n_gpu: {}, distributed training: {}, 16-bits training: {}".format(
         device, n_gpu, bool(args.local_rank != -1), args.fp16))
 
@@ -404,6 +399,8 @@ def main():
     random.seed(args.seed)
     np.random.seed(args.seed)
     torch.manual_seed(args.seed)
+
+
     if n_gpu > 0:
         torch.cuda.manual_seed_all(args.seed)
 
@@ -414,13 +411,11 @@ def main():
         raise ValueError("Output directory ({}) already exists and is not empty.".format(args.output_dir))
     os.makedirs(args.output_dir, exist_ok=True)
 
-
     processor = processors()
     num_labels = num_labels_task
     label_list = None
 
     tokenizer = BertTokenizer.from_pretrained(args.ernie_model, do_lower_case=args.do_lower_case)
-    #tokenizer = BertTokenizer.from_pretrained('ernie_base', do_lower_case=args.do_lower_case)
 
     train_examples = None
     num_train_steps = None
@@ -429,13 +424,15 @@ def main():
         len(train_examples) / args.train_batch_size / args.gradient_accumulation_steps * args.num_train_epochs)
 
     # Prepare model
-    model, _ = BertForSequenceClassification.from_pretrained(args.ernie_model,
+    model, _ = ErnieForSequenceClassification.from_pretrained(args.ernie_model,
               cache_dir=CACHE_DIRECTORY / 'distributed_{}'.format(args.local_rank),
               num_labels = num_labels)
-    #model = ERNIE
+
     if args.fp16:
         model.half()
     model.to(device)
+
+    # parallelize with apex if available
     if args.local_rank != -1:
         try:
             from apex.parallel import DistributedDataParallel as DDP
@@ -456,8 +453,12 @@ def main():
         {'params': [p for n, p in param_optimizer if any(nd in n for nd in no_decay)], 'weight_decay': 0.0}
         ]
     t_total = num_train_steps
+
+
     if args.local_rank != -1:
         t_total = t_total // torch.distributed.get_world_size()
+
+
     if args.fp16:
         try:
             from apex.contrib.optimizers.fp16_optimizer import FP16_Optimizer
@@ -478,7 +479,10 @@ def main():
         optimizer = BertAdam(optimizer_grouped_parameters,
                              lr=args.learning_rate,
                              warmup=args.warmup_proportion,
+    
                              t_total=t_total)
+
+    
     global_step = 0
     if args.do_train:
         train_features = convert_examples_to_features(
@@ -494,7 +498,6 @@ def main():
         embed = torch.FloatTensor(vecs)
         embed = torch.nn.Embedding.from_pretrained(embed)
         #embed = torch.nn.Embedding(5041175, 100)
-
         logger.info("Shape of entity embedding: "+str(embed.weight.size()))
         del vecs
 
@@ -503,6 +506,8 @@ def main():
         logger.info("  Num examples = %d", len(train_examples))
         logger.info("  Batch size = %d", args.train_batch_size)
         logger.info("  Num steps = %d", num_train_steps)
+
+
         all_input_ids = torch.tensor([f.input_ids for f in train_features], dtype=torch.long)
         all_input_mask = torch.tensor([f.input_mask for f in train_features], dtype=torch.long)
         all_segment_ids = torch.tensor([f.segment_ids for f in train_features], dtype=torch.long)
@@ -510,6 +515,8 @@ def main():
         all_ent = torch.tensor([f.input_ent for f in train_features], dtype=torch.long)
         all_ent_masks = torch.tensor([f.ent_mask for f in train_features], dtype=torch.long)
         train_data = TensorDataset(all_input_ids, all_input_mask, all_segment_ids, all_ent, all_ent_masks, all_label_ids)
+
+        # initialize sampler
         if args.local_rank == -1:
             train_sampler = RandomSampler(train_data)
         else:
@@ -518,15 +525,21 @@ def main():
 
         output_loss_file = os.path.join(args.output_dir, "loss")
         loss_fout = open(output_loss_file, 'w')
+
         model.train()
+
+
         for _ in trange(int(args.num_train_epochs), desc="Epoch"):
             tr_loss = 0
             nb_tr_examples, nb_tr_steps = 0, 0
+
             for step, batch in enumerate(tqdm(train_dataloader, desc="Iteration")):
+
                 batch = tuple(t.to(device) if i != 3 else t for i, t in enumerate(batch))
                 input_ids, input_mask, segment_ids, input_ent, ent_mask, label_ids = batch
                 input_ent = embed(input_ent+1).to(device) # -1 -> 0
                 loss = model(input_ids, segment_ids, input_mask, input_ent, ent_mask, label_ids)
+
                 if n_gpu > 1:
                     loss = loss.mean() # mean() to average on multi-gpu.
                 if args.gradient_accumulation_steps > 1:
@@ -541,6 +554,7 @@ def main():
                 tr_loss += loss.item()
                 nb_tr_examples += input_ids.size(0)
                 nb_tr_steps += 1
+
                 if (step + 1) % args.gradient_accumulation_steps == 0:
                     # modify learning rate with special warm up BERT uses
                     lr_this_step = args.learning_rate * warmup_linear(global_step/t_total, args.warmup_proportion)
@@ -549,9 +563,12 @@ def main():
                     optimizer.step()
                     optimizer.zero_grad()
                     global_step += 1
+            
+            # save checkpoints
             model_to_save = model.module if hasattr(model, 'module') else model
             output_model_file = os.path.join(args.output_dir, "pytorch_model.bin_{}".format(global_step))
             torch.save(model_to_save.state_dict(), output_model_file)
+
 
         # Save a trained model
         model_to_save = model.module if hasattr(model, 'module') else model  # Only save the model it-self

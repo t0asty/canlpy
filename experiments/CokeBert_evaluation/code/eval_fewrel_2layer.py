@@ -55,7 +55,6 @@ def load_ent_emb_static():
     with open('./data/load_data_n/e1_outORin_list_2D_Tensor.pkl', 'rb') as f:
         ent_outORin = pickle.load(f)
 
-
     return ent_neighbor, ent_r, ent_outORin
 
 
@@ -71,7 +70,6 @@ def load_knowledge():
     embed_ent = torch.FloatTensor(vecs)
     del vecs
 
-
     #load relation emb
     vecs = []
     vecs.append([0]*100) # CLS
@@ -83,222 +81,13 @@ def load_knowledge():
     embed_r = torch.FloatTensor(vecs)
     del vecs
 
-
-
     return embed_ent, embed_r
 
 
-def load_batch_k_v_queryE(input_ent,max_neighbor=3):
-    input_ent = input_ent.cpu()
-    input_ent_neighbor_emb = torch.zeros(input_ent.shape[0],input_ent.shape[1],max_neighbor).long()
-    input_ent_r_emb = torch.zeros(input_ent.shape[0],input_ent.shape[1],max_neighbor).long()
-    input_ent_outORin_emb = torch.zeros(input_ent.shape[0],input_ent.shape[1],max_neighbor)
-
-    ent_pos_s = torch.nonzero(input_ent)
-    ents = input_ent[input_ent!=0]
-
-    for i,ent in enumerate(ents): #batch_times
-        ##########
-        #e_neighbor
-        ##########
-        neighbor_length = len(ent_neighbor[int(ent)])
-        if neighbor_length < max_neighbor:
-            input_ent_neighbor_emb[int(ent_pos_s[i][0])][int(ent_pos_s[i][1])][:] = torch.LongTensor(ent_neighbor[int(ent)]+[0]*(max_neighbor-neighbor_length))
-
-        else:
-            input_ent_neighbor_emb[int(ent_pos_s[i][0])][int(ent_pos_s[i][1])][:] = torch.LongTensor(ent_neighbor[int(ent)][:max_neighbor])
-
-        ##########
-        #e_r
-        ##########
-        r_length = len(ent_r[int(ent)])
-        if r_length < max_neighbor:
-            input_ent_r_emb[int(ent_pos_s[i][0])][int(ent_pos_s[i][1])][:] = torch.LongTensor(ent_r[int(ent)]+[0]*(max_neighbor-r_length))
-
-        else:
-            input_ent_r_emb[int(ent_pos_s[i][0])][int(ent_pos_s[i][1])][:] = torch.LongTensor(ent_r[int(ent)][:max_neighbor])
-
-
-        ##########
-        #e_outORin
-        ##########
-        outORin_length = len(ent_outORin[int(ent)])
-        if outORin_length < max_neighbor:
-            input_ent_outORin_emb[int(ent_pos_s[i][0])][int(ent_pos_s[i][1])][:] = torch.FloatTensor(ent_outORin[int(ent)]+[0]*(max_neighbor-outORin_length))
-
-        else:
-            input_ent_outORin_emb[int(ent_pos_s[i][0])][int(ent_pos_s[i][1])][:] = torch.FloatTensor(ent_outORin[int(ent)][:max_neighbor])
-
-
-    #load_embedding
-    #e
-    input_ent_neighbor_emb = input_ent_neighbor_emb.reshape(input_ent_neighbor_emb.shape[0]*input_ent_neighbor_emb.shape[1],max_neighbor)
-    input_ent_neighbor_emb = torch.index_select(embed_ent,0,input_ent_neighbor_emb.reshape(input_ent_neighbor_emb.shape[0]*input_ent_neighbor_emb.shape[1])) #
-    input_ent_neighbor_emb = input_ent_neighbor_emb.reshape(input_ent.shape[0],input_ent.shape[1],max_neighbor,100)
-
-    #r
-    input_ent_r_emb = input_ent_r_emb.reshape(input_ent_r_emb.shape[0]*input_ent_r_emb.shape[1],max_neighbor)
-    input_ent_r_emb = torch.index_select(embed_ent,0,input_ent_r_emb.reshape(input_ent_r_emb.shape[0]*input_ent_r_emb.shape[1])) #
-    input_ent_r_emb = input_ent_r_emb.reshape(input_ent.shape[0],input_ent.shape[1],max_neighbor,100)
-
-    #outORin
-    input_ent_outORin_emb = input_ent_outORin_emb.unsqueeze(3)
-
-    #Output e_
-    k = input_ent_neighbor_emb.cuda()+input_ent_outORin_emb.cuda()*input_ent_r_emb.cuda()
-    v = k
-    return k,v
-
-
-def load_batch_k_v_queryR(input_ent,max_neighbor=4): #cannot ramdom --> because of static position
-    input_ent = input_ent.cpu()
-    input_ent_neighbor_emb = torch.zeros(input_ent.shape[0],input_ent.shape[1],max_neighbor).long()
-    input_ent_r_emb = torch.zeros(input_ent.shape[0],input_ent.shape[1],max_neighbor).long()
-    input_ent_outORin_emb = torch.zeros(input_ent.shape[0],input_ent.shape[1],max_neighbor)
-
-    ent_pos_s = torch.nonzero(input_ent)
-    ents = input_ent[input_ent!=0]
-
-    for i,ent in enumerate(ents): #batch_times
-        ##########
-        #e_neighbor
-        ##########
-        neighbor_length = len(ent_neighbor[int(ent)])
-        if neighbor_length < max_neighbor:
-            input_ent_neighbor_emb[int(ent_pos_s[i][0])][int(ent_pos_s[i][1])][:] = torch.LongTensor(ent_neighbor[int(ent)]+[0]*(max_neighbor-neighbor_length))
-
-        else:
-            input_ent_neighbor_emb[int(ent_pos_s[i][0])][int(ent_pos_s[i][1])][:] = torch.LongTensor(ent_neighbor[int(ent)][:max_neighbor])
-
-        ##########
-        #e_r
-        ##########
-        r_length = len(ent_r[int(ent)])
-        if r_length < max_neighbor:
-            input_ent_r_emb[int(ent_pos_s[i][0])][int(ent_pos_s[i][1])][:] = torch.LongTensor(ent_r[int(ent)]+[0]*(max_neighbor-r_length))
-
-        else:
-            input_ent_r_emb[int(ent_pos_s[i][0])][int(ent_pos_s[i][1])][:] = torch.LongTensor(ent_r[int(ent)][:max_neighbor])
-
-
-        ##########
-        #e_outORin
-        ##########
-        outORin_length = len(ent_outORin[int(ent)])
-        if outORin_length < max_neighbor:
-            input_ent_outORin_emb[int(ent_pos_s[i][0])][int(ent_pos_s[i][1])][:] = torch.FloatTensor(ent_outORin[int(ent)]+[0]*(max_neighbor-outORin_length))
-
-        else:
-            input_ent_outORin_emb[int(ent_pos_s[i][0])][int(ent_pos_s[i][1])][:] = torch.FloatTensor(ent_outORin[int(ent)][:max_neighbor])
-
-
-    #load_embedding
-    #e
-    input_ent_neighbor_emb = input_ent_neighbor_emb.reshape(input_ent_neighbor_emb.shape[0]*input_ent_neighbor_emb.shape[1],max_neighbor)
-    #print(input_ent_neighbor_emb.shape)
-    input_ent_neighbor_emb = torch.index_select(embed_ent,0,input_ent_neighbor_emb.reshape(input_ent_neighbor_emb.shape[0]*input_ent_neighbor_emb.shape[1])) #
-    #print(input_ent_neighbor_emb.shape)
-    input_ent_neighbor_emb = input_ent_neighbor_emb.reshape(input_ent.shape[0],input_ent.shape[1],max_neighbor,100)
-    #print(input_ent_neighbor_emb.shape)
-    #print("===============")
-
-    #r
-    input_ent_r_emb = input_ent_r_emb.reshape(input_ent_r_emb.shape[0]*input_ent_r_emb.shape[1],max_neighbor)
-    #print(input_ent_r_emb.shape)
-    input_ent_r_emb = torch.index_select(embed_ent,0,input_ent_r_emb.reshape(input_ent_r_emb.shape[0]*input_ent_r_emb.shape[1])) #
-    #print(input_ent_r_emb.shape)
-    input_ent_r_emb = input_ent_r_emb.reshape(input_ent.shape[0],input_ent.shape[1],max_neighbor,100)
-    #print(input_ent_r_emb.shape)
-    #print("===============")
-
-    #outORin
-    #print(input_ent_outORin_emb.shape)
-    input_ent_outORin_emb = input_ent_outORin_emb.unsqueeze(3)
-    #print(input_ent_outORin_emb.shape)
-    #exit()
-
-    #print(input_ent_neighbor_emb)
-    #print(input_ent_neighbor_emb.shape)
-
-    #Output e_
-    k = input_ent_outORin_emb.cuda()*input_ent_r_emb.cuda()
-    v = input_ent_neighbor_emb.cuda()+k
-    return k,v
-    #k = (input_ent_outORin_emb*input_ent_r_emb).cuda()
-    #v = input_ent_neighbor_emb.cuda()+k
-    #return k,v
-
-
-
-def load_k_v_queryR(input_ent):
-
-        #1 line
-        #create input_ent_neighbor_emb:
-        input_ent = input_ent.cpu()
-        input_ent_neighbor_emb = torch.index_select(ent_neighbor,0,input_ent.reshape(input_ent.shape[0]*input_ent.shape[1])).long()
-        input_ent_neighbor_emb = torch.index_select(embed_ent,0,input_ent_neighbor_emb.reshape(input_ent_neighbor_emb.shape[0]*input_ent_neighbor_emb.shape[1])) #
-        input_ent_neighbor_emb = input_ent_neighbor_emb.reshape(input_ent.shape[0],input_ent.shape[1],ent_neighbor.shape[1],100)
-
-        #create input_ent_r:
-        input_ent_r_emb = torch.index_select(ent_r,0,input_ent.reshape(input_ent.shape[0]*input_ent.shape[1])).long()
-        input_ent_r_emb = torch.index_select(embed_ent,0,input_ent_r_emb.reshape(input_ent_r_emb.shape[0]*input_ent_r_emb.shape[1])) #
-        input_ent_r_emb = input_ent_r_emb.reshape(input_ent.shape[0],input_ent.shape[1],ent_r.shape[1],100)
-
-        #create outORin:
-        input_ent_outORin_emb = torch.index_select(ent_outORin,0,input_ent.reshape(input_ent.shape[0]*input_ent.shape[1]))
-        input_ent_outORin_emb = input_ent_outORin_emb.reshape(input_ent.shape[0],input_ent.shape[1],input_ent_outORin_emb.shape[1])
-        input_ent_outORin_emb = input_ent_outORin_emb.unsqueeze(3)
-
-        #Output e_
-        k = input_ent_outORin_emb.cuda()*input_ent_r_emb.cuda()
-        v = input_ent_neighbor_emb.cuda()+k
-        return k,v
-
-
-
-def load_k_v_queryE(input_ent):
-        #sentence_word = 256
-        #entity_neighbor = 50
-        #entity_neighbor = 4
-
-        #1 line
-        #create input_ent_neighbor_emb:
-        input_ent = input_ent.cpu()
-        input_ent_neighbor_emb = torch.index_select(ent_neighbor,0,input_ent.reshape(input_ent.shape[0]*input_ent.shape[1])).long()
-        input_ent_neighbor_emb = torch.index_select(embed_ent,0,input_ent_neighbor_emb.reshape(input_ent_neighbor_emb.shape[0]*input_ent_neighbor_emb.shape[1])) #
-        input_ent_neighbor_emb = input_ent_neighbor_emb.reshape(input_ent.shape[0],input_ent.shape[1],ent_neighbor.shape[1],100)
-
-        #create input_ent_r:
-        input_ent_r_emb = torch.index_select(ent_r,0,input_ent.reshape(input_ent.shape[0]*input_ent.shape[1])).long()
-        input_ent_r_emb = torch.index_select(embed_ent,0,input_ent_r_emb.reshape(input_ent_r_emb.shape[0]*input_ent_r_emb.shape[1])) #
-        input_ent_r_emb = input_ent_r_emb.reshape(input_ent.shape[0],input_ent.shape[1],ent_r.shape[1],100)
-
-        #create outORin:
-        input_ent_outORin_emb = torch.index_select(ent_outORin,0,input_ent.reshape(input_ent.shape[0]*input_ent.shape[1]))
-        input_ent_outORin_emb = input_ent_outORin_emb.reshape(input_ent.shape[0],input_ent.shape[1],input_ent_outORin_emb.shape[1])
-        input_ent_outORin_emb = input_ent_outORin_emb.unsqueeze(3)
-
-        #Output e_
-        k = input_ent_neighbor_emb.cuda()+input_ent_outORin_emb.cuda()*input_ent_r_emb.cuda()
-        v = k
-        return k,v
-
-
 def load_k_v_queryR_small(input_ent):
-        #print(input_ent)
-        #print(input_ent.shape)
-        #exit()
         input_ent = input_ent.cpu()
-
-        #if input_ent.shape[0]>1:
-        #print(input_ent)
-        #print(input_ent.shape)
-        #print("======")
 
         ent_pos_s = torch.nonzero(input_ent)
-        #print(ent_pos_s)
-        #print(ent_pos_s.shape)
-        #print("======")
 
         max_entity=0
         value=0
@@ -313,28 +102,13 @@ def load_k_v_queryR_small(input_ent):
             else:
                 last_part+=1
         max_entity = max(last_part,max_entity)
-        #print("\n")
-        #print(max_entity)
-        #print("======")
 
-        #ents = input_ent[input_ent!=0]
         new_input_ent = list()
         for i_th, ten in enumerate(input_ent):
             ten_ent = ten[ten!=0]
             new_input_ent.append( torch.cat( (ten_ent,( torch.LongTensor( [0]*(max_entity-ten_ent.shape[0]) ) ) ) ) )
-            #print(new_input_ent[i_th].shape)
-            #print("---------------")
-            #print(torch.nonzero(ten))
-            #non_ = torch.nonzero(ten)
-            #print(torch.nonzero(input_ent[i_th]),
-            #torch.LongTensor([0]*max_entity-input_ent[i_th]))
-        #print(new_input_ent)
-        #print("======")
-        input_ent = torch.stack(new_input_ent)
-        #print(input_ent)
-        #print(input_ent.shape)
-        #exit()
 
+        input_ent = torch.stack(new_input_ent)
 
         #Neighbor
         input_ent_neighbor = torch.index_select(ent_neighbor,0,input_ent.reshape(input_ent.shape[0]*input_ent.shape[1])).long()
@@ -373,7 +147,7 @@ def load_k_v_queryR_small(input_ent):
         v_1 = input_ent_neighbor_emb_1.cuda()+k_1
         k_2 = input_ent_outORin_emb_2.cuda()*input_ent_r_emb_2.cuda()
         v_2 = input_ent_neighbor_emb_2.cuda()+k_2
-        #exit()
+
         return k_1,v_1,k_2,v_2
 
 
@@ -382,7 +156,7 @@ def load_k_v_queryR_small(input_ent):
 print("Load Emb ...")
 embed_ent, embed_r = load_knowledge()
 ent_neighbor, ent_r, ent_outORin = load_ent_emb_static()
-#ent_neighbor, ent_r, ent_outORin = load_ent_emb_dynamic()
+
 print("Finsh loading Emb")
 
 
@@ -758,8 +532,6 @@ def main():
 
     processors = FewrelProcessor
 
-    num_labels_task = 80
-
     if args.local_rank == -1 or args.no_cuda:
         device = torch.device("cuda" if torch.cuda.is_available() and not args.no_cuda else "cpu")
         n_gpu = torch.cuda.device_count()
@@ -786,29 +558,11 @@ def main():
         raise ValueError("At least one of `do_train` or `do_eval` must be True.")
 
     processor = processors()
-    num_labels = num_labels_task
     label_list = None
 
     tokenizer = BertTokenizer.from_pretrained(args.ernie_model, do_lower_case=args.do_lower_case)
 
-    train_examples = None
-    num_train_steps = None
-    train_examples, label_list = processor.get_train_examples(args.data_dir)
-    '''
-    vecs = []
-    vecs.append([0]*100)
-    with open("kg_embed/entity2vec.vec", 'r') as fin:
-        for line in fin:
-            vec = line.strip().split('\t')
-            vec = [float(x) for x in vec]
-            vecs.append(vec)
-    embed = torch.FloatTensor(vecs)
-    embed = torch.nn.Embedding.from_pretrained(embed)
-    #embed = torch.nn.Embedding(5041175, 100)
-
-    logger.info("Shape of entity embedding: "+str(embed.weight.size()))
-    del vecs
-    '''
+    _, label_list = processor.get_train_examples(args.data_dir)
 
     filenames = os.listdir(args.output_dir)
     filenames = [x for x in filenames if "pytorch_model.bin_" in x]
@@ -816,7 +570,7 @@ def main():
     ###
     #filenames = [x for x in filenames if x in ["pytorch_model.bin_1750", "pytorch_model.bin_2000", "pytorch_model.bin_2250", "pytorch_model.bin_2500", "pytorch_model.bin_2750", "pytorch_model.bin_3000", "pytorch_model.bin_3250", "pytorch_model.bin_3500", "pytorch_model.bin_3750", "pytorch_model.bin_4000", "pytorch_model.bin_4250", "pytorch_model.bin_4500", "pytorch_model.bin_4750", "pytorch_model.bin_5000"] ]
 
-    filenames = [x for x in filenames if x in ["pytorch_model.bin_1750", "pytorch_model.bin_2000", "pytorch_model.bin_2250", "pytorch_model.bin_2500", "pytorch_model.bin_2750", "pytorch_model.bin_3000", "pytorch_model.bin_3250", "pytorch_model.bin_3500", "pytorch_model.bin_3750", "pytorch_model.bin_4000"] ]
+    # filenames = [x for x in filenames if x in ["pytorch_model.bin_1750", "pytorch_model.bin_2000", "pytorch_model.bin_2250", "pytorch_model.bin_2500", "pytorch_model.bin_2750", "pytorch_model.bin_3000", "pytorch_model.bin_3250", "pytorch_model.bin_3500", "pytorch_model.bin_3750", "pytorch_model.bin_4000"] ]
     ###
 
     file_mark = []
@@ -833,34 +587,14 @@ def main():
 
     for x, mark in file_mark:
         print(x, mark)
-        #if mark == True: ###erine
-        #    continue ###erine
-        #else: ###erine
-        #    print("Test") ###erine
-        #exit()
         output_model_file = os.path.join(args.output_dir, x)
         model_state_dict = torch.load(output_model_file)
-        #model, _ = BertForSequenceClassification.from_pretrained(args.ernie_model, state_dict=model_state_dict, num_labels=len(label_list))
-        model, _ = CokeBertForSequenceClassification.from_pretrained(args.ernie_model, state_dict=model_state_dict, num_labels=len(label_list))
 
-        #model.to(device)
-        #print(device)
+        model, _ = CokeBertForSequenceClassification.from_pretrained(args.ernie_model, state_dict=model_state_dict, num_labels=len(label_list))
 
         if args.fp16: #
             model.half() #
         model.to(device)
-
-        #print(model)
-        #print(list(model.named_parameters()))
-        #print("==")
-        #print(list(model.bert.word_graph_attention.K_V_linear.weight))
-        #exit()
-        #for i in model.parameters():
-        #    print(i)
-        #exit()
-        #for name, param in model.named_parameters():
-        #    print(name,param.requires_grad)
-
 
         if mark:
             eval_features = dev
@@ -869,14 +603,12 @@ def main():
         logger.info("***** Running evaluation *****")
         logger.info("  Num examples = %d", len(eval_examples))
         logger.info("  Batch size = %d", args.eval_batch_size)
-        # zeros = [0 for _ in range(args.max_seq_length)]
-        # zeros_ent = [0 for _ in range(100)]
-        # zeros_ent = [zeros_ent for _ in range(args.max_seq_length)]
+
         all_input_ids = torch.tensor([f.input_ids for f in eval_features], dtype=torch.long)
         all_input_mask = torch.tensor([f.input_mask for f in eval_features], dtype=torch.long)
         all_segment_ids = torch.tensor([f.segment_ids for f in eval_features], dtype=torch.long)
         all_label_ids = torch.tensor([f.label_id for f in eval_features], dtype=torch.long)
-        #all_text = torch.tensor([f.text for f in eval_features], dtype=torch.long)
+
         all_ent = torch.tensor([f.input_ent for f in eval_features], dtype=torch.long)
         all_ent_masks = torch.tensor([f.ent_mask for f in eval_features], dtype=torch.long)
         eval_data = TensorDataset(all_input_ids, all_input_mask, all_segment_ids, all_ent, all_ent_masks, all_label_ids)
@@ -900,31 +632,9 @@ def main():
         eval_loss, eval_accuracy = 0, 0
         nb_eval_steps, nb_eval_examples = 0, 0
 
-        #embed_ent, embed_r, e1_e2_r_outORin = load_knowledge()
-
-        #logits_erine = torch.load('logits.pt') ###erine
-        #i_index = 0 ###erine
         for input_ids, input_mask, segment_ids, input_ent, ent_mask, label_ids in eval_dataloader:
-            #input_ent = embed(input_ent+1) # -1 -> 0
             ###
-            input_ent = input_ent+1
-            #print(input_ent)
-            #print(input_ent.shape)
-            #exit()
-
-            ###
-            '''
-            cordinate = np.array(torch.nonzero(input_ent))
-            for x,y in cordinate:
-                input_ent[x,y]=2
-            '''
-            ###
-
-            #for input_id in input_ids:
-                #text = tokenizer.convert_ids_to_tokens(input_id.tolist())
-                #text = tokenizer.decode(input_id.tolist())
-                #print(text)
-            #exit()
+            input_ent = input_ent+1 # -1 -> 0
 
             input_ids = input_ids.to(device)
             input_mask = input_mask.to(device)
@@ -933,25 +643,13 @@ def main():
             ent_mask = ent_mask.to(device)
             label_ids = label_ids.to(device)
 
-
-
-            #k, v = load_k_v_queryR(input_ent)
             k_1, v_1, k_2, v_2 = load_k_v_queryR_small(input_ent)
 
 
 
             with torch.no_grad():
-                #tmp_eval_loss = model(input_ids, segment_ids, input_mask, input_ent, ent_mask, label_ids)
-                #tmp_eval_loss = model(input_ids, segment_ids, input_mask, input_ent.float(), ent_mask, label_ids, device, input_ent_emb)
-                #tmp_eval_loss = model(input_ids, segment_ids, input_mask, input_ent.float(), ent_mask, label_ids, k.half(), v.half())
                 tmp_eval_loss = model(input_ids, segment_ids, input_mask, input_ent, ent_mask, label_ids, [(k_1.float(), v_1.float()), (k_2.float(), v_2.float())])
-                #logits = model(input_ids, segment_ids, input_mask, input_ent, ent_mask)
-                #logits = model(input_ids, segment_ids, input_mask, input_ent.float(), ent_mask, None, device, input_ent_emb)
-                #logits = model(input_ids, segment_ids, input_mask, input_ent.float(), ent_mask, None, k.half(), v.half())
                 logits = model(input_ids, segment_ids, input_mask, input_ent, ent_mask, None, [(k_1.float(), v_1.float()), (k_2.float(), v_2.float())])
-
-            #logits = (logits_erine[i_index].cuda().half() + logits)/2 ###erine
-            #i_index += 1 ###erine
 
             logits = logits.detach().cpu().numpy()
             label_ids = label_ids.to('cpu').numpy()
@@ -974,7 +672,7 @@ def main():
                   }
 
 
-        #with open(output_eval_file+"_comb", "w") as writer: ###erine
+        # write results
         with open(output_eval_file, "w") as writer:
             logger.info("***** Eval results *****")
             for key in sorted(result.keys()):

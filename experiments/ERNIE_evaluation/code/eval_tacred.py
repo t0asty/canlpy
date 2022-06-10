@@ -32,16 +32,10 @@ import torch
 from torch.utils.data import TensorDataset, DataLoader, RandomSampler, SequentialSampler
 from torch.utils.data.distributed import DistributedSampler
 
-# from knowledge_bert.tokenization import BertTokenizer
-
 from canlpy.core.util.tokenization import BertTokenizer
 from canlpy.core.models.ernie.model import ErnieForSequenceClassification
 from canlpy.train.optimization import BertAdam
 from canlpy.core.util.file_utils import CACHE_DIRECTORY
-#from knowledge_bert.modeling import BertForSequenceClassification
-# from ernie_clean import BertForSequenceClassification
-# from knowledge_bert.optimization import BertAdam
-# from knowledge_bert.file_utils import CACHE_DIRECTORY
 
 logging.basicConfig(format='%(asctime)s - %(levelname)s - %(name)s -   %(message)s',
                     datefmt='%m/%d/%Y %H:%M:%S',
@@ -185,19 +179,11 @@ def convert_examples_to_features(examples, label_list, max_seq_length, tokenizer
         tokens_a, entities_a = tokenizer.tokenize(ex_text_a, ent_pos)
 
         tokens_b = None
-        if False:
-            tokens_b, entities_b = tokenizer.tokenize(
-                example.text_b[0], [x for x in example.text_b[1] if x[-1] > threshold])
-            # Modifies `tokens_a` and `tokens_b` in place so that the total
-            # length is less than the specified length.
-            # Account for [CLS], [SEP], [SEP] with "- 3"
-            _truncate_seq_pair(tokens_a, tokens_b, entities_a,
-                               entities_b, max_seq_length - 3)
-        else:
-            # Account for [CLS] and [SEP] with "- 2"
-            if len(tokens_a) > max_seq_length - 2:
-                tokens_a = tokens_a[:(max_seq_length - 2)]
-                entities_a = entities_a[:(max_seq_length - 2)]
+
+        # Account for [CLS] and [SEP] with "- 2"
+        if len(tokens_a) > max_seq_length - 2:
+            tokens_a = tokens_a[:(max_seq_length - 2)]
+            entities_a = entities_a[:(max_seq_length - 2)]
 
         # The convention in BERT is:
         # (a) For sequence pairs:
@@ -281,25 +267,6 @@ def convert_examples_to_features(examples, label_list, max_seq_length, tokenizer
                           ent_mask=ent_mask,
                           label_id=label_id))
     return features
-
-
-def _truncate_seq_pair(tokens_a, tokens_b, ents_a, ents_b, max_length):
-    """Truncates a sequence pair in place to the maximum length."""
-
-    # This is a simple heuristic which will always truncate the longer sequence
-    # one token at a time. This makes more sense than truncating an equal percent
-    # of tokens from each, since if one sequence is very short then each token
-    # that's truncated likely contains more information than a longer sequence.
-    while True:
-        total_length = len(tokens_a) + len(tokens_b)
-        if total_length <= max_length:
-            break
-        if len(tokens_a) > len(tokens_b):
-            tokens_a.pop()
-            ents_a.pop()
-        else:
-            tokens_b.pop()
-            ents_b.pop()
 
 
 def warmup_linear(x, warmup=0.002):
@@ -505,7 +472,7 @@ def main():
         print(x, mark)
         output_model_file = os.path.join(args.output_dir, x)
         model_state_dict = torch.load(output_model_file)
-        model, _ = BertForSequenceClassification.from_pretrained(
+        model, _ = ErnieForSequenceClassification.from_pretrained(
             args.ernie_model, state_dict=model_state_dict, num_labels=len(label_list))
         model.to(device)
 
@@ -521,15 +488,15 @@ def main():
                 args.output_dir, "test_pred_{}.txt".format(x.split("_")[-1]))
             output_file_ = os.path.join(
                 args.output_dir, "test_gold_{}.txt".format(x.split("_")[-1]))
+
+
         fpred = open(output_file, "w")
         fgold = open(output_file_, "w")
 
         logger.info("***** Running evaluation *****")
         logger.info("  Num examples = %d", len(eval_examples))
         logger.info("  Batch size = %d", args.eval_batch_size)
-        # zeros = [0 for _ in range(args.max_seq_length)]
-        # zeros_ent = [0 for _ in range(100)]
-        # zeros_ent = [zeros_ent for _ in range(args.max_seq_length)]
+
         all_input_ids = torch.tensor(
             [f.input_ids for f in eval_features], dtype=torch.long)
         all_input_mask = torch.tensor(
@@ -544,6 +511,7 @@ def main():
             [f.ent_mask for f in eval_features], dtype=torch.long)
         eval_data = TensorDataset(all_input_ids, all_input_mask,
                                   all_segment_ids, all_ent, all_ent_masks, all_label_ids)
+
         # Run prediction for full data
         eval_sampler = SequentialSampler(eval_data)
         eval_dataloader = DataLoader(

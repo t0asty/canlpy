@@ -183,14 +183,11 @@ def load_knowledge():
     vecs = []
     vecs.append([0]*100) # CLS
     with open("./data/kg_embed/entity2vec.vec", 'r') as fin:
-    #with open("kg_embed/entity2vec.del", 'r') as fin:
         for line in fin:
             vec = line.strip().split('\t')
             vec = [float(x) for x in vec]
             vecs.append(vec)
     embed_ent = torch.FloatTensor(vecs)
-    #embed = torch.nn.Embedding.from_pretrained(embed)
-    #logger.info("Shape of entity embedding: "+str(embed.weight.size()))
     del vecs
 
 
@@ -198,38 +195,20 @@ def load_knowledge():
     vecs = []
     vecs.append([0]*100) # CLS
     with open("./data/kg_embed/relation2vec.vec", 'r') as fin:
-    #with open("kg_embed/relation2vec.del", 'r') as fin:
         for line in fin:
             vec = line.strip().split('\t')
             vec = [float(x) for x in vec]
             vecs.append(vec)
     embed_r = torch.FloatTensor(vecs)
-    #embed = torch.nn.Embedding.from_pretrained(embed)
-    #logger.info("Shape of entity embedding: "+str(embed.weight.size()))
     del vecs
-
-
-    #embed_ent = torch.nn.Embedding.from_pretrained(embed_ent)
-    #embed_r = torch.nn.Embedding.from_pretrained(embed_r)
 
     return embed_ent, embed_r
 
 
 def load_k_v_queryR_small(input_ent):
-        #print(input_ent)
-        #print(input_ent.shape)
-        #exit()
         input_ent = input_ent.cpu()
 
-        #if input_ent.shape[0]>1:
-        #print(input_ent)
-        #print(input_ent.shape)
-        #print("======")
-
         ent_pos_s = torch.nonzero(input_ent)
-        #print(ent_pos_s)
-        #print(ent_pos_s.shape)
-        #print("======")
 
         max_entity=0
         value=0
@@ -244,28 +223,12 @@ def load_k_v_queryR_small(input_ent):
             else:
                 last_part+=1
         max_entity = max(last_part,max_entity)
-        #print("\n")
-        #print(max_entity)
-        #print("======")
 
-        #ents = input_ent[input_ent!=0]
         new_input_ent = list()
         for i_th, ten in enumerate(input_ent):
             ten_ent = ten[ten!=0]
             new_input_ent.append( torch.cat( (ten_ent,( torch.LongTensor( [0]*(max_entity-ten_ent.shape[0]) ) ) ) ) )
-            #print(new_input_ent[i_th].shape)
-            #print("---------------")
-            #print(torch.nonzero(ten))
-            #non_ = torch.nonzero(ten)
-            #print(torch.nonzero(input_ent[i_th]),
-            #torch.LongTensor([0]*max_entity-input_ent[i_th]))
-        #print(new_input_ent)
-        #print("======")
         input_ent = torch.stack(new_input_ent)
-        #print(input_ent)
-        #print(input_ent.shape)
-        #exit()
-
 
         #Neighbor
         input_ent_neighbor = torch.index_select(ent_neighbor,0,input_ent.reshape(input_ent.shape[0]*input_ent.shape[1])).long()
@@ -304,7 +267,7 @@ def load_k_v_queryR_small(input_ent):
         v_1 = input_ent_neighbor_emb_1.cuda()+k_1
         k_2 = input_ent_outORin_emb_2.cuda()*input_ent_r_emb_2.cuda()
         v_2 = input_ent_neighbor_emb_2.cuda()+k_2
-        #exit()
+
         return k_1,v_1,k_2,v_2
 
 
@@ -312,7 +275,6 @@ def load_k_v_queryR_small(input_ent):
 print("Load Emb ...")
 embed_ent, embed_r = load_knowledge()
 ent_neighbor, ent_r, ent_outORin = load_ent_emb_static()
-#ent_neighbor, ent_r, ent_outORin = load_ent_emb_dynamic()
 print("Finsh loading Emb")
 
 
@@ -443,25 +405,6 @@ def convert_examples_to_features(examples, label_list, max_seq_length, tokenizer
                               ent_mask=ent_mask,
                               labels=labels))
     return features
-
-
-def _truncate_seq_pair(tokens_a, tokens_b, ents_a, ents_b, max_length):
-    """Truncates a sequence pair in place to the maximum length."""
-
-    # This is a simple heuristic which will always truncate the longer sequence
-    # one token at a time. This makes more sense than truncating an equal percent
-    # of tokens from each, since if one sequence is very short then each token
-    # that's truncated likely contains more information than a longer sequence.
-    while True:
-        total_length = len(tokens_a) + len(tokens_b)
-        if total_length <= max_length:
-            break
-        if len(tokens_a) > len(tokens_b):
-            tokens_a.pop()
-            ents_a.pop()
-        else:
-            tokens_b.pop()
-            ents_b.pop()
 
 def accuracy(out, l):
     cnt = 0
@@ -628,8 +571,7 @@ def main():
     num_train_steps = None
     train_examples, label_list, d = processor.get_train_examples(args.data_dir)
     label_list = sorted(label_list)
-    #class_weight = [min(d[x], 100) for x in label_list]
-    #logger.info(class_weight)
+
     S = []
     for l in label_list:
         s = []
@@ -661,7 +603,6 @@ def main():
 
     # Prepare optimizer
     param_optimizer = list(model.named_parameters())
-    #no_grad = ['bert.encoder.layer.11.output.dense_ent', 'bert.encoder.layer.11.output.LayerNorm_ent']
     no_grad = ['model.knowledge_encoder.layer.6.fusion.skip_layer_ent.dense', 'model.knowledge_encoder.layer.6.fusion.skip_layer_ent.LayerNorm']
     param_optimizer = [(n, p) for n, p in param_optimizer if not any(nd in n for nd in no_grad)]
     no_decay = ['bias', 'LayerNorm.bias', 'LayerNorm.weight']
@@ -727,16 +668,10 @@ def main():
                 batch = tuple(t.to(device) if i != 3 else t for i, t in enumerate(batch))
                 input_ids, input_mask, segment_ids, input_ent, ent_mask, labels = batch
 
-                #input_ent = embed(input_ent+1).to(device)
-                #twst
-                #input_ent[input_ent!=0]=1
-                #
                 input_ent = (input_ent+1).to(device)
 
-                #k, v = load_k_v_queryR_small(input_ent)
                 k_1, v_1, k_2, v_2 = load_k_v_queryR_small(input_ent)
 
-                #loss = model(input_ids, segment_ids, input_mask, input_ent.half(), ent_mask, labels.half(), k.half(), v.half())
                 try:
                     loss = model(input_ids, segment_ids, input_mask, input_ent.float(), ent_mask.float(), labels.float(), [(k_1.float(), v_1.float()), (k_2.float(), v_2.float())])
                 except ValueError as e:
@@ -764,10 +699,13 @@ def main():
                     optimizer.step()
                     optimizer.zero_grad()
                     global_step += 1
+
+                    # save model checkpoint
                     if global_step % 150 == 0 and global_step > 0:
                         model_to_save = model.module if hasattr(model, 'module') else model
                         output_model_file = os.path.join(args.output_dir, "pytorch_model.bin_{}".format(global_step))
                         torch.save(model_to_save.state_dict(), output_model_file)
+            # save model per epoch
             model_to_save = model.module if hasattr(model, 'module') else model
             output_model_file = os.path.join(args.output_dir, "pytorch_model.bin_{}".format(epoch))
             torch.save(model_to_save.state_dict(), output_model_file)

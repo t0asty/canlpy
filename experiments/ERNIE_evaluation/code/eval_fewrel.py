@@ -28,19 +28,10 @@ import simplejson as json
 
 import numpy as np
 import torch
-from torch.utils.data import TensorDataset, DataLoader, RandomSampler, SequentialSampler
-from torch.utils.data.distributed import DistributedSampler
-
-#from knowledge_bert.tokenization import BertTokenizer
-#from knowledge_bert.modeling import BertForSequenceClassification
-#from canlpy.core.models.ernie.model import BertForSequenceClassification
-#from knowledge_bert.optimization import BertAdam
-#from knowledge_bert.file_utils import CACHE_DIRECTORY
+from torch.utils.data import TensorDataset, DataLoader, SequentialSampler
 
 from canlpy.core.util.tokenization import BertTokenizer
 from canlpy.core.models.ernie.model import ErnieForSequenceClassification
-from canlpy.train.optimization import BertAdam
-from canlpy.core.util.file_utils import CACHE_DIRECTORY
 
 logging.basicConfig(format = '%(asctime)s - %(levelname)s - %(name)s -   %(message)s',
                     datefmt = '%m/%d/%Y %H:%M:%S',
@@ -386,10 +377,7 @@ def main():
     parser.add_argument('--threshold', type=float, default=.3)
 
     args = parser.parse_args()
-
     processors = FewrelProcessor
-
-    num_labels_task = 80
 
     if args.local_rank == -1 or args.no_cuda:
         device = torch.device("cuda" if torch.cuda.is_available() and not args.no_cuda else "cpu")
@@ -417,14 +405,10 @@ def main():
         raise ValueError("At least one of `do_train` or `do_eval` must be True.")
 
     processor = processors()
-    num_labels = num_labels_task
     label_list = None
-
     tokenizer = BertTokenizer.from_pretrained(args.ernie_model, do_lower_case=args.do_lower_case)
+    _, label_list = processor.get_train_examples(args.data_dir)
 
-    train_examples = None
-    num_train_steps = None
-    train_examples, label_list = processor.get_train_examples(args.data_dir)
     vecs = []
     vecs.append([0]*100)
     with open("kg_embed/entity2vec.vec", 'r') as fin:
@@ -434,7 +418,6 @@ def main():
             vecs.append(vec)
     embed = torch.FloatTensor(vecs)
     embed = torch.nn.Embedding.from_pretrained(embed)
-    #embed = torch.nn.Embedding(5041175, 100)
 
     logger.info("Shape of entity embedding: "+str(embed.weight.size()))
     del vecs
@@ -465,12 +448,11 @@ def main():
             eval_features = dev
         else:
             eval_features = test
+
         logger.info("***** Running evaluation *****")
         logger.info("  Num examples = %d", len(eval_examples))
         logger.info("  Batch size = %d", args.eval_batch_size)
-        # zeros = [0 for _ in range(args.max_seq_length)]
-        # zeros_ent = [0 for _ in range(100)]
-        # zeros_ent = [zeros_ent for _ in range(args.max_seq_length)]
+
         all_input_ids = torch.tensor([f.input_ids for f in eval_features], dtype=torch.long)
         all_input_mask = torch.tensor([f.input_mask for f in eval_features], dtype=torch.long)
         all_segment_ids = torch.tensor([f.segment_ids for f in eval_features], dtype=torch.long)
@@ -478,6 +460,7 @@ def main():
         all_ent = torch.tensor([f.input_ent for f in eval_features], dtype=torch.long)
         all_ent_masks = torch.tensor([f.ent_mask for f in eval_features], dtype=torch.long)
         eval_data = TensorDataset(all_input_ids, all_input_mask, all_segment_ids, all_ent, all_ent_masks, all_label_ids)
+
         # Run prediction for full data
         eval_sampler = SequentialSampler(eval_data)
         eval_dataloader = DataLoader(eval_data, sampler=eval_sampler, batch_size=args.eval_batch_size)
@@ -495,8 +478,11 @@ def main():
         fgold = open(output_file_glod, "w")
 
         model.eval()
+
         eval_loss, eval_accuracy = 0, 0
         nb_eval_steps, nb_eval_examples = 0, 0
+
+
         for input_ids, input_mask, segment_ids, input_ent, ent_mask, label_ids in eval_dataloader:
             input_ent = embed(input_ent+1) # -1 -> 0
             input_ids = input_ids.to(device)
