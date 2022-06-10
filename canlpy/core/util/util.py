@@ -13,3 +13,13 @@ def extend_attention_mask_for_bert(mask, dtype):
     extended_attention_mask = extended_attention_mask.to(dtype=dtype)
     extended_attention_mask = (1.0 - extended_attention_mask) * -10000.0
     return extended_attention_mask
+
+def find_value(config,key):
+    if key in config:
+        return config[key]
+    else:
+        for value in config.values():
+            if(isinstance(value,dict)):
+                temp = find_value(value,key)
+                if temp:
+                    return temp

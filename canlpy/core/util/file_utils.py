@@ -23,12 +23,8 @@ import requests
 
 logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
-# CACHE_DIRECTORY = Path(os.getenv('CACHE_DIRECTORY',
-#                                                Path.home() / '.pytorch_pretrained_bert'))
 CACHE_ROOT = Path(os.getenv('CANLPY_CACHE_ROOT', Path.home() / '.canlpy'))
 CACHE_DIRECTORY = str(CACHE_ROOT / "cache")
-                                        
-
 
 def url_to_filename(url: str, etag: str = None) -> str:
     """

@@ -280,10 +280,9 @@ class CokeBertModel(PreTrainedCokeBertModel):
         
         return sequence_output, pooled_output
 
-
 class DKEncoder(nn.Module):
     def __init__(self, k_v_dim, q_dim, no_layers):
-        super(DKEncoder, self).__init__()
+        super().__init__()
 
         layers = []
         for i in range(no_layers, 0, -1):
@@ -294,53 +293,8 @@ class DKEncoder(nn.Module):
 
         self.k_v_dim = k_v_dim
 
-    """
-    def self_attention(self, q, k_1, v_1, k_2, v_2):
-        q_2 = self.q_linear_2(q)
-        q_2 = self.tanh(q_2)
-
-        q_2 = q_2.unsqueeze(1).unsqueeze(2).unsqueeze(3)
-
-        k = self.k_v_linear_2(k_2)
-
-        attention = ((q_2 * k).sum(4)).div(math.sqrt(self.k_v_dim))
-
-        attention = attention.masked_fill(attention==0, float('-10000'))
-        attention = self.softmax_3(self.LeakyReLU(attention))
-        attention = attention.masked_fill(attention==float(1/attention.shape[-1]), float(0)) # don't need to
-
-
-        attention = attention.unsqueeze(3)
-
-        sentence_entity_reps = attention.matmul(v_2).squeeze(3)
-
-        v_1 = torch.cat([v_1, sentence_entity_reps],-1)
-
-        q_1 = self.q_linear_1(q)
-        q_1 = self.Tanh(q_1)
-
-        q_1 = q_1.unsqueeze(1).unsqueeze(2)
-
-
-        k = self.k_v_linear_1(k_1)
-
-        attention = ((q_1*k).sum(3)).div(math.sqrt(self.k_v_dim))
-
-
-        attention = attention.masked_fill(attention==0, float('-10000'))
-        attention = self.softmax_2(self.LeakyReLU(attention))
-        attention = attention.masked_fill(attention==float(1/attention.shape[-1]), float(0)) # don't need to
-        attention = attention.unsqueeze(2)
-
-        sentence_entity_reps = attention.matmul(v_1).squeeze(2)
-
-        return sentence_entity_reps
-    """
-
-
     def forward(self, input_ent, q, k_v_s):#k_1, v_1, k_2, v_2):
         q = q[:,0,:] #all input: 0, !=0
-        #combined = self.self_attention(q, k_1, v_1, k_2, v_2)
         for i in range(len(self.layers)):
             k, v = k_v_s[-(i+1)]
             if i != 0:
