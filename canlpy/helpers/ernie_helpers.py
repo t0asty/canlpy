@@ -56,7 +56,7 @@ def create_model_mapping_ERNIE(model_old)->Dict[str,str]:
 
 def get_ents(text:str,name_to_QID:Dict[str,str],keep_proba:float = 0.3)->List[Tuple[str,int,int,float]]:
     '''Returns a list of [entity_QID,character_idx_start,character_idx_end,entity_score] for each entity detect in the text
-    Input:
+    Args:
         text: string, the text to extract entities from
         name_to_QID: a dictionary mapping entity names to their QID'''
     annotations = tagme.annotate(text)
@@ -102,7 +102,7 @@ def load_eid_to_vec(filename:str)->FloatTensor:
 
 def concatenate_tokens_entities(tokens_a:List[str],tokens_b:List[str],entities_a:List[str],entities_b:List[str]) -> Tuple[List[str],List[str],List[int],List[int]]:
     '''Returns the merged tokens and entities as well as a list representing their segments_ids and the input mask
-        Input:
+        Args:
             tokens_a: a list of tokens
             tokens_b: a list of tokens
             entities_a: a list of entities QID 
@@ -117,7 +117,7 @@ def concatenate_tokens_entities(tokens_a:List[str],tokens_b:List[str],entities_a
 
 def get_entities_embeddings_and_mask(entities:List[str],QID_to_eid:Dict[str,int], eid_to_embeddings: Embedding,device:str)->Tuple[Tensor,Tensor]:
     '''Returns the merged tokens and entities as well as a list representing their segments_ids and the input mask
-        Input:
+        Args:
             entities: a list of tokens
             QID_to_eid: a list of tokens
             eid_to_embeddings: a list of entities QID 
