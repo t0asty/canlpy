@@ -10,22 +10,29 @@ from tqdm import tqdm
 from canlpy.core.models.bert.model import init_weights
 from canlpy.core.util.knowbert_tokenizer.vocabulary import Vocabulary
 
-#Similar to nn.Embedding but allow for more functionalities
 class EntityEmbedder():
+    """An extension to nn.Embedding but allow for more functionalities"""
     pass
 
 def read_embeddings_from_text_file(gzip_filename: str,
                                     embedding_dim: int,
                                     vocab: Vocabulary,
-                                    namespace: str = "tokens") -> torch.FloatTensor:
+                                    namespace: str = "tokens") -> nn.Embedding:
     """
-    Read pre-trained word vectors from an eventually compressed text file, possibly contained
+    Read pre-trained word vectors from a compressed text file, possibly contained
     inside an archive with multiple files. The text file is assumed to be utf-8 encoded with
     space-separated fields: [word] [dim 1] [dim 2] ...
 
-    Lines that contain more numerical tokens than ``embedding_dim`` raise a warning and are skipped.
+    Lines that contain more numerical tokens than `embedding_dim` raise a warning and are skipped.
 
-    The remainder of the docstring is identical to ``_read_pretrained_embeddings_file``.
+    Args:
+        gzip_filename: the file name containing the embeddings
+        embedding_dim: the dimension of the embeddings
+        vocab: a vocabulary object containing the index to token mapping
+        namespace: the namespace the embeddings correpond to, eg: entity
+
+    Returns:
+        embeddings: nn.Embedding, the extracted embeddings
     """
     tokens_to_keep = set(vocab.get_index_to_token_vocabulary(namespace).values())
     vocab_size = vocab.get_vocab_size(namespace)
@@ -85,8 +92,7 @@ def read_embeddings_from_text_file(gzip_filename: str,
     embedding = nn.Embedding.from_pretrained(embedding_matrix)
     return embedding
 
-#Acts like a standard embedding but with pre-trained entity embeddings and trained POS embeddings
-class WordNetAllEmbedding(torch.nn.Module, EntityEmbedder):
+class WordNetAllEmbedding(nn.Module, EntityEmbedder):
     """
     Combines pretrained fixed embeddings with learned POS embeddings.
 
@@ -95,6 +101,16 @@ class WordNetAllEmbedding(torch.nn.Module, EntityEmbedder):
         - look up
         - concat POS embedding
         - linear project to candidate embedding shape
+
+    Parameters:
+        embedding_file: a file containing the embeddings
+        entity_dim: the dimension of the entities
+        entity_file: the file containing the entities
+        vocab_file: the file containing the vocabulary
+        entity_h5_key: unknown
+        dropout: dropout to apply on the embeddings
+        pos_embedding_dim: the dimension of the position embedding
+        include_null_embedding: whether to include null embedding
     """
     POS_MAP = {
         '@@PADDING@@': 0,
@@ -202,11 +218,11 @@ class WordNetAllEmbedding(torch.nn.Module, EntityEmbedder):
 
     def forward(self, entity_ids):
         """
-        entity_ids = (batch_size, num_candidates, num_entities) array of entity
-            ids
+        Args:
+            entity_ids: torch.LongTensor (batch_size, num_candidates, num_entities) of entity ids
 
-        returns (batch_size, num_candidates, num_entities, embed_dim)
-            with entity embeddings
+        Returns:
+            entity_embeddings:  torch.LongTensor (batch_size, num_candidates, num_entities, embed_dim)
         """
         # get list of unique entity ids
         unique_ids, unique_ids_to_entity_ids = torch.unique(entity_ids, return_inverse=True)
