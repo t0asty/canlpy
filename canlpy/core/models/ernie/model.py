@@ -44,7 +44,7 @@ class ErnieConfig():
         Args:
             vocab_size: Vocabulary size of `inputs_ids` in `ErnieModel`.
             hidden_size: Size of the encoder layers and the pooler layer.
-            entity_size= Size of the entity embeddings,
+            entity_size: Size of the entity embeddings,
             num_hidden_layers: Number of hidden layers in the Transformer encoder.
             num_attention_heads: Number of attention heads for each attention layer in
                 the Transformer encoder for the tokens.
@@ -108,7 +108,7 @@ class ErnieConfig():
 class PreTrainedErnieModel(nn.Module):
     """ 
     An abstract class to handle weights initialization and
-        a simple interface for dowloading and loading pretrained models.
+        a simple interface for downloading and loading pretrained models.
     """
     def __init__(self, config, *inputs, **kwargs):
         super().__init__()
@@ -184,7 +184,7 @@ class PreTrainedErnieModel(nn.Module):
         logger.info(f"Missing keys are: \n {missing_keys}")
         logger.info(f"Unexpected keys are: \n {unexpected_keys}")
 
-        return model
+        return model, missing_keys
 
 class ErnieModel(PreTrainedErnieModel):
     """
