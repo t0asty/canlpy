@@ -1,3 +1,12 @@
+# -*- coding: utf-8 -*-
+"""Re-Implementation of the CokeBert Model (Su et al., 2020)
+
+This module contains several versions of CokeBert for different 
+fine-tune tasks. 
+
+"""
+
+
 import copy
 import json
 import math
@@ -10,15 +19,17 @@ from torch.nn import CrossEntropyLoss, BCEWithLogitsLoss
 
 from canlpy.core.models.bert.model import BertEmbeddings, BertPooler, init_weights, LayerNorm
 from canlpy.core.models.ernie.components import ErnieEncoder
-from canlpy.core.models.common.heads import BertOnlyMLMHead
-#from canlpy.core.models.common.activation_functions import get_activation_function
+from canlpy.core.components.heads import BertOnlyMLMHead
 from canlpy.core.components.fusion.cokebert_fusion import DK_fusion
 
 logger = logging.getLogger(__name__)
 
 CONFIG_NAME = 'cokebert_config.json'
+"""str: name of the config file in the checkpoint"""
 WEIGHTS_NAME = 'pytorch_model.bin'
+"""str: name of the file containing weights in the checkpoint"""
 MAPPING_FILE = 'mapping.json'
+"""str: name of the file containing the mapping in the checkpoint"""
 
 class CokeBertConfig():
     """Configuration class to store the configuration of a `CokeBertModel`.
@@ -44,28 +55,31 @@ class CokeBertConfig():
         """Constructs CokeBertConfig.
 
         Args:
-            vocab_size_or_config_json_file: Vocabulary size of `inputs_ids` in `ErnieModel`.
-            hidden_size: Size of the encoder layers and the pooler layer.
-            num_hidden_layers: Number of hidden layers in the Transformer encoder.
-            num_attention_heads: Number of attention heads for each attention layer in
+            vocab_size (int): Vocabulary size of `inputs_ids` in `CokeBertModel`.
+            hidden_size (int): Size of the encoder layers and the pooler layer.
+            num_hidden_layers (int): Number of hidden layers in the Transformer encoder.
+            num_attention_heads (int): Number of attention heads for each attention layer in
                 the Transformer encoder.
-            intermediate_size: The size of the "intermediate" (i.e., feed-forward)
+            intermediate_size (int): The size of the "intermediate" (i.e., feed-forward)
                 layer in the Transformer encoder.
-            hidden_act: The non-linear activation function (function or string) in the
+            hidden_act (int): The non-linear activation function (function or string) in the
                 encoder and pooler. If string, "gelu", "relu" and "swish" are supported.
-            hidden_dropout_prob: The dropout probabilitiy for all fully connected
+            hidden_dropout_prob (int): The dropout probabilitiy for all fully connected
                 layers in the embeddings, encoder, and pooler.
-            attention_probs_dropout_prob: The dropout ratio for the attention
+            attention_probs_dropout_prob (float): The dropout ratio for the attention
                 probabilities.
-            max_position_embeddings: The maximum sequence length that this model might
+            max_position_embeddings (int): The maximum sequence length that this model might
                 ever be used with. Typically set this to something large just in case
                 (e.g., 512 or 1024 or 2048).
-            type_vocab_size: The vocabulary size of the `token_type_ids` passed into
-                `ErnieModel`.
-            initializer_range: The sttdev of the truncated_normal_initializer for
+            type_vocab_size (int): The vocabulary size of the `token_type_ids` passed into
+                `CokeBertModel`.
+            initializer_range (float): The sttdev of the truncated_normal_initializer for
                 initializing all weight matrices.
-            layer_types: list() of ERNIE encoders which can be 'sim' (Bert encoder), 
-            'mix' (Ernie encoder but no multihead attention for entites) or 'norm' (standard Ernie encoder)
+            layer_types (list): list of `ErnieLayer`s which can be 'sim' (Bert encoder), 
+                'mix' (Ernie encoder but no multihead attention for entites) or 'norm' (standard Ernie encoder)
+            k_v_dim (int): Size of the hidden knowledge representation in the dynamic knowledge encoder
+            q_dim (int): Size of the hidden text representation in the dynamic knowledge encoder
+            dk_layers (int): Number of layers in the dynamic knowledge encoder
         """
         self.vocab_size = vocab_size
         self.hidden_size = hidden_size
@@ -87,6 +101,15 @@ class CokeBertConfig():
        
     @classmethod
     def load_from_json(cls,path):
+        """Loads config from json file
+        
+        Args:
+            cls: current CokeBertConfig Class
+            path (str): path to config.json file
+
+        Returns:
+            config: Loaded CokeBertConfig
+        """
         config = cls(0)#Create default config
         with open(path, "r", encoding='utf-8') as reader:
             json_config = json.loads(reader.read())
@@ -98,21 +121,39 @@ class CokeBertConfig():
         return str(self.to_json_string())
 
     def to_json_string(self):
-        """Serializes this instance to a JSON string."""
+        """Serializes this instance to a JSON string.
+        
+        Returns:
+            JSON-String of Config
+        """
         return json.dumps(self.to_dict(), indent=2, sort_keys=True) + "\n"
         
     def to_dict(self):
-        """Serializes this instance to a Python dictionary."""
+        """Serializes this instance to a Python dictionary.
+        
+        Returns:
+            output: Python dictionary of Config
+        """
         output = copy.deepcopy(self.__dict__)
         return output
 
     def to_text_encoder_config(self):
+        """Splits Config to create `ErnieEncoder` as TextEncoder
+        
+        Returns:
+            CokeBertConfig for TextEncoder
+        """
         params = self.to_dict()
         params['layer_types'] = [x for x in params['layer_types'] if x == 'sim']
         params['num_hidden_layers'] = len(params['layer_types'])
         return CokeBertConfig(**params)
 
     def to_knowl_encoder_config(self):
+        """Splits Config to create `ErnieEncoder` as KnowledgeEncoder
+        
+        Returns:
+            CokeBertConfig for KnowledgeEncoder
+        """
         params = self.to_dict()
         params['layer_types'] = [x for x in params['layer_types'] if x != 'sim']
         params['num_hidden_layers'] = len(params['layer_types'])
@@ -135,6 +176,9 @@ class PreTrainedCokeBertModel(nn.Module):
 
     def init_weights(self, module):
         """ Initialize the weights.
+
+        parameters:
+            
         """
         if isinstance(module, (nn.Linear, nn.Embedding)):
             # Slightly different from the TF version which uses truncated_normal for initialization
