@@ -15,20 +15,30 @@ from canlpy.core.util.knowbert_tokenizer.vocabulary import Vocabulary
 
 from pytorch_pretrained_bert.modeling import BertForPreTraining, BertLayer, BertLayerNorm, BertConfig, BertEncoder
 
-
-# KnowBert:
-#   Combines bert with one or more SolderedKG
-#
-#   each SolderedKG is inserted at a particular level, given by an index,
-#   such that we run Bert to the index, then the SolderedKG, then the rest
-#   of bert.  Indices such that index 0 means run the first contextual layer,
-#   then add KG, and index 11 means run to the top of Bert, then the KG
-#   (for bert base with 12 layers).
-#
-
-#Do MLP(prior,span_representation @ entity_embedding) and generates weighted entity embedding from the obtained similarities
-
 class KnowBert(nn.Module):
+    """
+    KnowBert
+    Combines BERT with one or more SolderedKG
+
+    each SolderedKG is inserted at a particular level, given by an index,
+    such that we run Bert to the index, then the SolderedKG, then the rest
+    of bert.  Indices such that index 0 means run the first contextual layer,
+    then add KG, and index 11 means run to the top of BERT, then the KG
+    (for bert base with 12 layers).
+
+
+    Parameters:
+        soldered_kgs: a dictionnary of named SolderedKG
+        soldered_layers: a dictionnary indicating at which index the SolderedKG is inserted
+        bert_model_name: the name of the bert model, eg: `bert_base_uncased`.
+        mode: `None` or `entity_linking`, `entity_linking` then only unfreeze the SolderedKB layer, 
+            else, unfreeze the entire model.
+        state_dict_file: a file containing the state dictionnary.
+        strict_load_archive: whether to allow unmapped weights to the loaded model.
+        remap_segment_embeddings: determines how many segment embeddings BERT can have (if None, the default of 2 is kept).
+        state_dict_map: a dictionnary used to remap embedding weights.
+    
+    """
     def __init__(self,
                  soldered_kgs: Dict[str, SolderedKG],
                  soldered_layers: Dict[str, int],
@@ -39,9 +49,6 @@ class KnowBert(nn.Module):
                  remap_segment_embeddings: int = None,
                  state_dict_map:Dict[str,str] = None):
 
-        '''
-        state_dict_map maps from string name in state_dict to new string name to fit
-        '''
         super().__init__()
 
         self.remap_segment_embeddings = remap_segment_embeddings
@@ -79,7 +86,7 @@ class KnowBert(nn.Module):
                 state_dict = torch.load(state_dict_file,map_location='cpu')
             
             #Does remapping
-            if(state_dict_map!=None):
+            if(state_dict_map is not None):
                 state_dict = state_dict.copy()
                 metadata = getattr(state_dict, '_metadata', None)
                 if metadata is not None:
@@ -105,8 +112,14 @@ class KnowBert(nn.Module):
         self.unfreeze()
     
     @classmethod
-    def from_pretrained(cls,str_or_url,strict_load_archive=True):
-        model_file = cached_path(str_or_url)
+    def from_pretrained(cls,file_or_url,strict_load_archive=True):
+        """
+            Loads a pretrained knowbert model from an archive file
+            Args:
+                file_or_url: a file path or url to the archive
+                strict_load_archive: whether to allow unmapped weights to the loaded model.
+        """
+        model_file = cached_path(file_or_url)
         tempdir = model_file+"_extracted"
         if(not os.path.isdir(tempdir)):
             os.makedirs(tempdir,exist_ok=True)
@@ -152,7 +165,6 @@ class KnowBert(nn.Module):
         
         return model
 
-
     def _remap_embeddings(self, token_type_embeddings):
         embed_dim = token_type_embeddings.shape[1]
         if list(token_type_embeddings.shape) == [self.remap_segment_embeddings, embed_dim]:
@@ -163,6 +175,13 @@ class KnowBert(nn.Module):
         return new_embeddings
 
     def load_state_dict(self, state_dict, strict=True):
+        """
+        Initialize the model's weights with the provided state_dict
+
+        Args:
+            state_dict: the PyTorch state dict.
+            strict: whether to allow unmapped weights to the loaded model.
+        """
         if self.remap_segment_embeddings:
             # hack the embeddings!
             new_embeddings = self._remap_embeddings(state_dict['pretrained_bert.bert.embeddings.token_type_embeddings.weight'])
@@ -171,6 +190,10 @@ class KnowBert(nn.Module):
         super().load_state_dict(state_dict, strict=strict)
 
     def unfreeze(self):
+        """
+        Unfreezes the weights depending of `self.mode`, if `entity_linking`only unfreezes SolderedKGs
+        else, unfreezes all weights
+        """
         if self.mode == 'entity_linking':
             # all parameters in BERT are fixed, just training the linker
             # linker specific params set below when calling soldered_kg.unfreeze
@@ -186,34 +209,35 @@ class KnowBert(nn.Module):
 
     def forward(self, tokens=None, segment_ids=None, candidates=None, **kwargs):
 
-        """Receives: 
-        tokens['tokens']: Tensor of tokens indices (used to idx an embedding) => because a batch contains multiple
-        sentences with varying # of tokens, all tokens tensors are padded with zeros 
-        shape: (batch_size (#sentences), max_seq_len)
+        """
+        
+        Args: 
+            tokens['tokens']: a torch.LongTensor of shape , shape: (batch_size, max_seq_len), tokens indices (used to index an embedding).
+            Because a batch contains multiple sentences with varying # of tokens, all tokens tensors are padded with zeros.
 
-        segment_ids: Tenso of segments_ids for each token (0 for first segment and 1 for second), can be used for NSP
-        shape: (batch_size,max_seq_len)
+            segment_ids: a torch.LongTensor of shape (batch_size,max_seq_len) indicating the segments_ids for each token (0 for first segment and 1 for second)
 
-        candidates, for each SolderedKB contains:
+            candidates, for each SolderedKB contains:
+            Example:
+                candidates['wordnet']['candidate_entity_priors']: torch.FloatTensor of shape (batch_size, max # detected entities, max # KB candidate entities)
+                Correctness probabilities estimated by the entity extractor (sums to 1 (or 0 if padding) on axis 2)
+                Adds 0 padding to axis 1 when there is less detected entities in the sentence than in the max sentence
+                Adds 0 padding to axis 2 when there is less detected KB entities for an entity in the sentence than in the max candidate KB entities entity
 
-          candidates['wordnet']['candidate_entity_priors']: hape:(batch_size, max # detected entities, max # KB candidate entities)
-          Correctness probabilities estimated by the entity extractor (sum to 1 (or 0 if padding) on axis 2)
-          Adds 0 padding to axis 1 when there is less detected entities in the sentence than in the max sentence
-          Adds 0 padding to axis 2 when there is less detected KB entities for an entity in the sentence than in the max candidate KB entities entity
+                candidates['wordnet']['ids']: torch.LongTensor of shape (batch_size, max # detected entities, max # KB candidate entities)
+                ids of the KB candidate entities + 0 padding on axis 1 or 2 if necessary.
 
-          candidates['wordnet']['ids']: shape: (batch_size, max # detected entities, max # KB candidate entities)
-          Ids of the KB candidate entities + 0 padding on axis 1 or 2 if necessary
+                candidates['wordnet']['candidate_spans']: torch.LongTensorshape of shape (batch_size, max # detected entities, 2)
+                Spans of which sequence of tokens correspond to an entity in the sentence, eg: [1,2] for Michael Jackson (both bounds are included)
+                Padding with [-1,-1] when no more detected entities
 
-          candidates['wordnet']['candidate_spans']: shape: (batch_size, max # detected entities, 2)
-          Spans of which sequence of tokens correspond to an entity in the sentence, eg: [1,2] for Michael Jackson (both bounds are included)
-          Padding with [-1,-1] when no more detected entities
-
-          candidates['wordnet']['candidate_segment_ids']: shape: (batch_size, max # detected entities)
-          For each sentence entity, indicate to which segment ids it corresponds to
+                candidates['wordnet']['candidate_segment_ids']: a torch.LongTensorshape of shape (batch_size, max # detected entities)
+                indicates the segments_ids for each entity
         
         kwargs:
-        lm_label_ids: suppose it is the labels of the masked token
-        next_sentence_label: labels of the next sentence for NSP"""
+            gold_entities: id of the correct corresponding entity, used by the entity linker to train
+
+        """
 
         assert candidates.keys() == self.soldered_kgs.keys()
 

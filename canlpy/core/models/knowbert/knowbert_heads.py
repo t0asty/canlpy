@@ -6,18 +6,37 @@ from pytorch_pretrained_bert.modeling import BertForPreTraining
 
 #Knowbert with masked LM and NSP
 class KnowBertForPreTraining(nn.Module):
+    """
+    A knowbert model with Masked LM and NSP loss used for pretraining 
+    Parameters:
+        knowbert_model: the underlying knowbert model
+    """
     def __init__(self,knowbert_model):
 
         #The model should be initialized with the corresponding training mode (freeze or not the entity linker)
         self.knowbert_model = knowbert_model
-        self.nsp_loss_function = torch.nn.CrossEntropyLoss(ignore_index=-1)
-        self.lm_loss_function = torch.nn.CrossEntropyLoss(ignore_index=0)
+        self.nsp_loss_function = nn.CrossEntropyLoss(ignore_index=-1)
+        self.lm_loss_function = nn.CrossEntropyLoss(ignore_index=0)
     
     def _compute_loss(self,
                       contextual_embeddings,
                       pooled_output,
                       lm_label_ids,
                       next_sentence_label):
+
+        """
+        Computes the losses of the model
+
+        Args:
+            contextual_embeddings: the predicted embeddings, used for MLM
+            pooled_output: the pooled CLS token used for NSP
+            lm_label_ids: the expected label ids
+            next_sentence_label: the next sentence label
+
+        Returns:
+            loss: the sum of the internal entity linker loss and the MLM and NSP loss
+        """
+
 
         # (batch_size, timesteps, vocab_size), (batch_size, 2)
         prediction_scores, seq_relationship_score = knowbert_model.pretraining_heads(
