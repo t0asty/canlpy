@@ -62,7 +62,7 @@ class CokeBertConfig():
                 the Transformer encoder.
             intermediate_size (int): The size of the "intermediate" (i.e., feed-forward)
                 layer in the Transformer encoder.
-            hidden_act (int): The non-linear activation function (function or string) in the
+            hidden_act: The non-linear activation function (function or string) in the
                 encoder and pooler. If string, "gelu", "relu" and "swish" are supported.
             hidden_dropout_prob (int): The dropout probabilitiy for all fully connected
                 layers in the embeddings, encoder, and pooler.
@@ -161,9 +161,10 @@ class CokeBertConfig():
 
 class PreTrainedCokeBertModel(nn.Module):
     """ An abstract class to handle weights initialization and
-        a simple interface for dowloading and loading pretrained models.
+        a simple interface for downloading and loading pretrained models.
     """
     def __init__(self, config, *inputs, **kwargs):
+        """"""
         super().__init__()
         if not isinstance(config, CokeBertConfig):
             raise ValueError(
@@ -177,8 +178,8 @@ class PreTrainedCokeBertModel(nn.Module):
     def init_weights(self, module):
         """ Initialize the weights.
 
-        parameters:
-            
+        Args:
+            module: one of `nn.Linear`, `nn.Embedding`, `LayerNorm`, module to initialize weights of
         """
         if isinstance(module, (nn.Linear, nn.Embedding)):
             # Slightly different from the TF version which uses truncated_normal for initialization
@@ -189,25 +190,22 @@ class PreTrainedCokeBertModel(nn.Module):
             module.weight.data.fill_(1.0)
         if isinstance(module, nn.Linear) and module.bias is not None:
             module.bias.data.zero_()
+
     @classmethod
     def from_pretrained(cls, dir_path, state_dict=None, cache_dir=None, *inputs, **kwargs):
         """
         Instantiate a PreTrainedBertModel from a pre-trained model file or a pytorch state dict.
         Download and cache the pre-trained model file if needed.
 
-        Params:
-            pretrained_model_name: either:
-                - a str with the name of a pre-trained model to load selected in the list of:
-                    . `bert-base-uncased`
-                    . `bert-large-uncased`
-                    . `bert-base-cased`
-                    . `bert-base-multilingual`
-                    . `bert-base-chinese`
-                - a path or url to a pretrained model archive containing:
+        Args:
+            dir_path (str): a path or url to a pretrained model archive containing:
+
                     . `bert_config.json` a configuration file for the model
+
                     . `pytorch_model.bin` a PyTorch dump of a BertForPreTraining instance
+
+            state_dict: an optional state dictionary (collections.OrderedDict object) to use instead of Google pre-trained models
             cache_dir: an optional path to a folder in which the pre-trained models will be cached.
-            state_dict: an optional state dictionnary (collections.OrderedDict object) to use instead of Google pre-trained models
             *inputs, **kwargs: additional input for the specific Bert class
                 (ex: num_labels for BertForSequenceClassification)
         """
@@ -255,7 +253,13 @@ class PreTrainedCokeBertModel(nn.Module):
         return model, missing_keys
 
 class CokeBertModel(PreTrainedCokeBertModel):
+    """ A class to handle the Transformer Model (without fine-tuning head)"""
     def __init__(self, config):
+        """ Constructs a CokeBertModel
+
+        Args:
+            config (`CokeBertConfig`): The config that sets the model's hyperparameters
+        """
         super(CokeBertModel, self).__init__(config)
         self.embeddings = BertEmbeddings(config.vocab_size, config.hidden_size, config.max_position_embeddings, config.hidden_dropout_prob, config.type_vocab_size)
         self.text_encoder = ErnieEncoder(config.to_text_encoder_config())
@@ -264,9 +268,39 @@ class CokeBertModel(PreTrainedCokeBertModel):
         self.dk_encoder = DKEncoder(config.k_v_dim, config.q_dim, config.dk_layers)
 
         self.k_v_dim = config.k_v_dim
+        self.entity_size = config.entity_size
         self.apply(self.init_weights)
 
     def forward(self, input_ids, token_type_ids=None, attention_mask=None, input_ent=None, ent_mask=None, output_all_encoded_layers=True, k_v_s=None):
+        """ Forward pass through the `CokeBertModel`
+
+        Args:
+            input_ids: a torch.LongTensor of shape [batch_size, sequence_length]
+                with the word token indices in the vocabulary(see the tokens preprocessing logic in the scripts
+                `extract_features.py`, `run_classifier.py` and `run_squad.py`)
+            token_type_ids: an optional torch.LongTensor of shape [batch_size, sequence_length] with the token
+                types indices selected in [0, 1]. Type 0 corresponds to a `sentence A` and type 1 corresponds to
+                a `sentence B` token (see BERT paper for more details).
+            attention_mask: an optional torch.LongTensor of shape [batch_size, sequence_length] with indices
+                selected in [0, 1]. It's a mask to be used if the input sequence length is smaller than the max
+                input sequence length in the current batch. It's the mask that we typically use for attention when
+                a batch has varying length sentences.
+            input_ent: a torch.LongTensor of shape [batch_size, sequence_length,embedding_size]
+                with the entities embeddings
+            ent_mask: a torch.LongTensor of shape [batch_size, sequence_length] with indices
+                selected in [0, 1]
+            output_all_encoded_layers: boolean which controls the content of the `encoded_layers` output as described below. Default: `True`.
+            k_v_s: list of (k_i, v_i) vectors as input for the dynamic knowledge encoder
+
+        Returns:
+            sequence_output, pooled_output
+
+            sequence_output: the full sequence of hidden-states corresponding
+                    to the last attention block of shape [batch_size, sequence_length, hidden_size]       
+            pooled_output: a torch.FloatTensor of size [batch_size, hidden_size] which is the output of a
+                classifier pretrained on top of the hidden state associated to the first character of the
+                input (`CLS`) to train on the Next-Sentence task (see BERT's paper).
+        """
         if attention_mask is None:
             attention_mask = torch.ones_like(input_ids)
         if token_type_ids is None:
@@ -299,19 +333,16 @@ class CokeBertModel(PreTrainedCokeBertModel):
         ent_mask = ent_mask.to(dtype=torch.float32)#.unsqueeze(-1)
         ##
 
-
         all_encoder_layers = self.text_encoder(embedding_output, extended_attention_mask, input_ent, extended_ent_mask, ent_mask, output_all_encoded_layers=output_all_encoded_layers)
 
         hidden_states = all_encoder_layers[-1]
 
         if len(input_ent[input_ent!=0]) == 0:
             # no input entities -> return 0s
-            # TODO: get shape from config
-            hidden_states_ent = torch.zeros(input_ent.shape[0], input_ent.shape[1],200)#.cuda()#.half()
+            hidden_states_ent = torch.zeros(input_ent.shape[0], input_ent.shape[1],self.entity_size)
         else:
 
-            hidden_states_ent = self.dk_encoder(input_ent, hidden_states, k_v_s) #[(k_1, v_1), (k_2, v_2)]
-            #hidden_states_ent = self.word_graph_attention(input_ent, hidden_states[:,0,:], k, v, "entity")
+            hidden_states_ent = self.dk_encoder(input_ent, hidden_states, k_v_s)
 
         encoded_layers = self.knowledge_encoder(hidden_states, extended_attention_mask,hidden_states_ent, extended_ent_mask, ent_mask, output_all_encoded_layers=output_all_encoded_layers)
         if output_all_encoded_layers:
@@ -327,7 +358,16 @@ class CokeBertModel(PreTrainedCokeBertModel):
         return sequence_output, pooled_output
 
 class DKEncoder(nn.Module):
+    """ A class for the Dynamic Knowledge Encoder for a `CokeBertModel`.
+    """
     def __init__(self, k_v_dim, q_dim, no_layers):
+        """Constructs a Dynamic KnowledgeEncoder
+
+        Args:
+            k_v_dim (int): size of the k and v vectors (internal Knowledge representation)
+            q_dim (int): size of the q vector (Internal Text Representation)
+            no_layers (int): Number of layers in the Dynamic Knowledge Encoder
+        """
         super().__init__()
 
         layers = []
@@ -339,8 +379,22 @@ class DKEncoder(nn.Module):
 
         self.k_v_dim = k_v_dim
 
-    def forward(self, input_ent, q, k_v_s):#k_1, v_1, k_2, v_2):
-        q = q[:,0,:] #all input: 0, !=0
+    def forward(self, input_ent, q, k_v_s):
+        """
+        Forward pass through the Dynamic Knowledge Encoder
+
+        Args:
+            input_ent: a torch.LongTensor of shape [batch_size, sequence_length,embedding_size]
+                with the entities embeddings
+            q: the full sequence of hidden-states corresponding
+                to the last text-attention block of shape [batch_size, sequence_length, hidden_size] 
+            k_v_s: list of (k, v) tuples of length `no_layers`, 
+                k, v are of shape [batch_size, sequence_length, k_v_dim]
+        
+        Returns:
+            hidden_states_ent: internal entity representations: torch.Tensor of shape [batch_size, sequence_length, entity_size]
+        """
+        q = q[:,0,:] #CLS token only
         for i in range(len(self.layers)):
             k, v = k_v_s[-(i+1)]
             if i != 0:
@@ -358,20 +412,52 @@ class DKEncoder(nn.Module):
         return hidden_states_ent
 
 class DKEncoder_layer(nn.Module):
+    """ A class for one Dynamic Knowledge Encoder Layer for a `DKEncoder` from CokeBert.
+    """
     def __init__(self, k_v_dim, q_dim, layer_no):
+        """ Constructs a `DKEncoder_layer`.
+        
+        Args:
+            k_v_dim (int): size of the k and v vectors (internal Knowledge representation)
+            q_dim (int): size of the q vector (Internal Text Representation)
+            layer_no (int): Number of the layer (assigned in reverse order)
+        """
         super().__init__()
         self.text = DK_text(k_v_dim, q_dim, layer_no)
         self.knowledge = DK_knowledge(k_v_dim)
         self.fusion = DK_fusion(k_v_dim, layer_no)
 
     def forward(self, q, k, v):
+        """
+        Forward pass through the Dynamic Knowledge Encoder layer
+
+        Args:
+            input_ent: a torch.LongTensor of shape [batch_size, sequence_length,embedding_size]
+                with the entities embeddings
+            q: the representation of hidden-states corresponding
+                to the last text-attention block of shape [batch_size, 1, q_dim] 
+            k: torch.Tensor of shape [batch_size, sequence_length, k_v_dim]
+            v: torch.Tensor of shape [batch_size, sequence_length, k_v_dim]
+        
+        Returns:
+            internal entity representations: torch.Tensor of shape [batch_size, sequence_length, entity_size]
+        """
         q_i = self.text(q)
         k = self.knowledge(k)
 
         return self.fusion(q_i, k, v)
 
 class DK_text(nn.Module):
+    """ A class for the Text Processing in a `DKEncoderLayer` from CokeBert.
+    """
     def __init__(self, k_v_dim, q_dim, layer_no):
+        """ Constructs a `DK_text` module
+        
+        Args:
+            k_v_dim (int): size of the k and v vectors (internal Knowledge representation)
+            q_dim (int): size of the q vector (Internal Text Representation)
+            layer_no (int): Number of the layer (assigned in reverse order)
+        """
         super().__init__()
         self.q_linear = nn.Linear(q_dim, k_v_dim, bias=True)
         self.tanh = nn.Tanh()
@@ -379,6 +465,15 @@ class DK_text(nn.Module):
         self.number = layer_no
 
     def forward(self, q):
+        """ Forward pass through the Text Processing Module of a Dynamic Knowledge Encoder layer
+        
+        Args:
+            q: the full sequence of hidden-states corresponding
+                to the last text-attention block of shape [batch_size, sequence_length, hidden_size] 
+
+        Returns:
+            q_i: torch.Tensor of shape [batch_size, sequence_length, k_v_dim]
+        """
         q_i = self.q_linear(q)
         q_i = self.tanh(q_i)
 
@@ -388,15 +483,40 @@ class DK_text(nn.Module):
         return q_i
 
 class DK_knowledge(nn.Module):
+    """ A class for the Knowledge Processing in a `DKEncoderLayer` from CokeBert."""
     def __init__(self, k_v_dim):
+        """ Constructs a `DK_knowledge` module
+
+        Args:
+            k_v_dim (int): size of the k and v vectors (internal Knowledge representation)
+        """
         super().__init__()
         self.k_v_linear = nn.Linear(k_v_dim, k_v_dim, bias=False)
     
     def forward(self, k):
+        """ Forward pass through the Knowledge Processing Module of a Dynamic Knowledge Encoder layer
+        
+        Args:
+            k: torch.Tensor of shape [batch_size, sequence_length, k_v_dim]
+
+        Returns:
+            hidden knowledge representation: torch.Tensor of shape [batch_size, sequence_length, k_v_dim]
+        """
         return self.k_v_linear(k)
 
 class CokeBertForSequenceClassification(PreTrainedCokeBertModel):
+    """
+    CokeBert model for sequence classification.  
+    This module is composed of the CokeBert model with a linear layer on top of
+    the pooled output.
+    """
     def __init__(self, config, num_labels=2):
+        """Constructs a `CokeBertForSequenceClassification` model
+
+        Args:
+            `config`: a CokeBertConfig class instance with the configuration to build a new model.
+            `num_labels`: the number of classes for the classifier. Default = 2.
+        """
         super().__init__(config)
 
         self.num_labels = num_labels
@@ -411,6 +531,33 @@ class CokeBertForSequenceClassification(PreTrainedCokeBertModel):
         self.apply(self.init_weights)
 
     def forward(self, input_ids=None, token_type_ids=None, attention_mask=None, input_ent=None, ent_mask=None, labels=None, k_v_s=None):
+        """ Performs a Forward Pass through the model
+
+        Args:
+            `input_ids`: a torch.LongTensor of shape [batch_size, sequence_length]
+                with the word token indices in the vocabulary(see the tokens preprocessing logic in the scripts
+                `extract_features.py`, `run_classifier.py` and `run_squad.py`)
+            `token_type_ids`: an optional torch.LongTensor of shape [batch_size, sequence_length] with the token
+                types indices selected in [0, 1]. Type 0 corresponds to a `sentence A` and type 1 corresponds to
+                a `sentence B` token (see BERT paper for more details).
+            `attention_mask`: an optional torch.LongTensor of shape [batch_size, sequence_length] with indices
+                selected in [0, 1]. It's a mask to be used if the input sequence length is smaller than the max
+                input sequence length in the current batch. It's the mask that we typically use for attention when
+                a batch has varying length sentences.
+            `input_ent`: a torch.LongTensor of shape [batch_size, sequence_length,embedding_size]
+                with the entities embeddings
+            `ent_mask`: a torch.LongTensor of shape [batch_size, sequence_length] with indices
+                selected in [0, 1]
+            `labels`: labels for the classification output: torch.LongTensor of shape [batch_size]
+                with indices selected in [0, ..., num_labels].
+            k_v_s: list of (k_i, v_i) vectors as input for the dynamic knowledge encoder
+
+        Returns:
+            if `labels` is not `None`:  
+                Outputs the CrossEntropy classification loss of the output with the labels.  
+            if `labels` is `None`:  
+                Outputs the classification logits of shape [batch_size, num_labels].  
+        """
         seq_out, pooled_output = self.model(input_ids, token_type_ids=token_type_ids, attention_mask=attention_mask, input_ent=input_ent, ent_mask=ent_mask, output_all_encoded_layers=False, k_v_s=k_v_s)
 
         head = seq_out[input_ids==1601]
@@ -425,7 +572,7 @@ class CokeBertForSequenceClassification(PreTrainedCokeBertModel):
             print(head.shape)
             print("===")
             print(tail.shape)
-            exit()
+            raise ValueError()
 
         pooled_output = self.dropout(pooled_output)
         logits = self.classifier(pooled_output)
@@ -446,13 +593,24 @@ class CokeBertForSequenceClassification(PreTrainedCokeBertModel):
                 print(self.num_labels)
                 print("---")
                 print(labels.shape)
-                exit()
+                raise ValueError()
             return loss
         else:
             return logits
 
 class CokeBertForEntityTyping(PreTrainedCokeBertModel):
+    """
+    CokeBert model for classification.  
+    This module is composed of the CokeBert model with a linear layer on top of
+    the pooled output.
+    """
     def __init__(self, config, num_labels=2):
+        """Constructs a `CokeBertForEntityTyping` model
+
+        Args:
+            `config`: a CokeBertConfig class instance with the configuration to build a new model.
+            `num_labels`: the number of classes for the classifier. Default = 2.
+        """
         super().__init__(config)
 
         self.num_labels = num_labels
@@ -465,6 +623,33 @@ class CokeBertForEntityTyping(PreTrainedCokeBertModel):
         self.activation = nn.Tanh()
 
     def forward(self, input_ids=None, token_type_ids=None, attention_mask=None, input_ent=None, ent_mask=None, labels=None, k_v_s=None):
+        """ Performs a Forward Pass through the model
+
+        Args:
+            `input_ids`: a torch.LongTensor of shape [batch_size, sequence_length]
+                with the word token indices in the vocabulary(see the tokens preprocessing logic in the scripts
+                `extract_features.py`, `run_classifier.py` and `run_squad.py`)
+            `token_type_ids`: an optional torch.LongTensor of shape [batch_size, sequence_length] with the token
+                types indices selected in [0, 1]. Type 0 corresponds to a `sentence A` and type 1 corresponds to
+                a `sentence B` token (see BERT paper for more details).
+            `attention_mask`: an optional torch.LongTensor of shape [batch_size, sequence_length] with indices
+                selected in [0, 1]. It's a mask to be used if the input sequence length is smaller than the max
+                input sequence length in the current batch. It's the mask that we typically use for attention when
+                a batch has varying length sentences.
+            `input_ent`: a torch.LongTensor of shape [batch_size, sequence_length,embedding_size]
+                with the entities embeddings
+            `ent_mask`: a torch.LongTensor of shape [batch_size, sequence_length] with indices
+                selected in [0, 1]
+            `labels`: labels for the classification output: torch.LongTensor of shape [batch_size]
+                with indices selected in [0, ..., num_labels].
+            k_v_s: list of (k_i, v_i) vectors as input for the dynamic knowledge encoder
+
+        Returns:
+            if `labels` is not `None`:  
+                Outputs the CrossEntropy classification loss of the output with the labels.  
+            if `labels` is `None`:  
+                Outputs the classification logits of shape [batch_size, num_labels].  
+        """
         seq_out, pooled_output = self.model(input_ids, token_type_ids=token_type_ids, attention_mask=attention_mask, input_ent=input_ent, ent_mask=ent_mask, output_all_encoded_layers=False, k_v_s=k_v_s)
 
         pooled_output = seq_out[input_ids==1601]
@@ -482,48 +667,50 @@ class CokeBertForEntityTyping(PreTrainedCokeBertModel):
             return logits
 
 class CokeBertForMaskedLM(PreTrainedCokeBertModel):
-    """BERT model with the masked language modeling head.
-    This module comprises the BERT model followed by the masked language modeling head.
-    Params:
-        config: a BertConfig class instance with the configuration to build a new model.
-    Inputs:
-        `input_ids`: a torch.LongTensor of shape [batch_size, sequence_length]
-            with the word token indices in the vocabulary(see the tokens preprocessing logic in the scripts
-            `extract_features.py`, `run_classifier.py` and `run_squad.py`)
-        `token_type_ids`: an optional torch.LongTensor of shape [batch_size, sequence_length] with the token
-            types indices selected in [0, 1]. Type 0 corresponds to a `sentence A` and type 1 corresponds to
-            a `sentence B` token (see BERT paper for more details).
-        `attention_mask`: an optional torch.LongTensor of shape [batch_size, sequence_length] with indices
-            selected in [0, 1]. It's a mask to be used if the input sequence length is smaller than the max
-            input sequence length in the current batch. It's the mask that we typically use for attention when
-            a batch has varying length sentences.
-        `masked_lm_labels`: masked language modeling labels: torch.LongTensor of shape [batch_size, sequence_length]
-            with indices selected in [-1, 0, ..., vocab_size]. All labels set to -1 are ignored (masked), the loss
-            is only computed for the labels set in [0, ..., vocab_size]
-    Outputs:
-        if `masked_lm_labels` is `None`:
-            Outputs the masked language modeling loss.
-        if `masked_lm_labels` is `None`:
-            Outputs the masked language modeling logits of shape [batch_size, sequence_length, vocab_size].
-    Example usage:
-    ```python
-    # Already been converted into WordPiece token ids
-    input_ids = torch.LongTensor([[31, 51, 99], [15, 5, 0]])
-    input_mask = torch.LongTensor([[1, 1, 1], [1, 1, 0]])
-    token_type_ids = torch.LongTensor([[0, 0, 1], [0, 1, 0]])
-    config = BertConfig(vocab_size_or_config_json_file=32000, hidden_size=768,
-        num_hidden_layers=12, num_attention_heads=12, intermediate_size=3072)
-    model = BertForMaskedLM(config)
-    masked_lm_logits_scores = model(input_ids, token_type_ids, input_mask)
-    ```
+    """
+    CokeBert model for masked pre-training task.  
+    This module is composed of the CokeBert model with a linear layer on top of
+    the sequence output.
     """
     def __init__(self, config):
+        """Constructs a `CokeBertForMaskedLM` model
+
+        Args:
+            `config`: a CokeBertConfig class instance with the configuration to build a new model.
+        """
         super().__init__(config)
         self.model = CokeBertModel(config)
         self.cls = BertOnlyMLMHead(config, self.model.embeddings.word_embeddings.weight)
         self.apply(self.init_weights)
 
     def forward(self, input_ids, input_ents, ent_mask=None, token_type_ids=None, attention_mask=None, masked_lm_labels=None, k_v_s=None):
+        """ Performs a Forward Pass through the model
+
+        Args:
+            `input_ids`: a torch.LongTensor of shape [batch_size, sequence_length]
+                with the word token indices in the vocabulary(see the tokens preprocessing logic in the scripts
+                `extract_features.py`, `run_classifier.py` and `run_squad.py`)
+            `token_type_ids`: an optional torch.LongTensor of shape [batch_size, sequence_length] with the token
+                types indices selected in [0, 1]. Type 0 corresponds to a `sentence A` and type 1 corresponds to
+                a `sentence B` token (see BERT paper for more details).
+            `attention_mask`: an optional torch.LongTensor of shape [batch_size, sequence_length] with indices
+                selected in [0, 1]. It's a mask to be used if the input sequence length is smaller than the max
+                input sequence length in the current batch. It's the mask that we typically use for attention when
+                a batch has varying length sentences.
+            `input_ent`: a torch.LongTensor of shape [batch_size, sequence_length,embedding_size]
+                with the entities embeddings
+            `ent_mask`: a torch.LongTensor of shape [batch_size, sequence_length] with indices
+                selected in [0, 1]
+            `labels`: labels for the classification output: torch.LongTensor of shape [batch_size]
+                with indices selected in [0, ..., num_labels].
+            k_v_s: list of (k_i, v_i) vectors as input for the dynamic knowledge encoder
+
+        Returns:
+            if `masked_lm_labels` is not `None`:  
+                Outputs the CrossEntropy classification loss of the output with the labels.  
+            if `masked_lm_labels` is `None`:  
+                Outputs the classification logits of shape [batch_size, num_labels].  
+        """
         sequence_output, _ = self.model(input_ids, token_type_ids, attention_mask, input_ents, ent_mask,
                                        output_all_encoded_layers=False, k_v_s=k_v_s)
         prediction_scores = self.cls(sequence_output)
