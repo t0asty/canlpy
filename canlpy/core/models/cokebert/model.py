@@ -342,7 +342,7 @@ class CokeBertModel(PreTrainedCokeBertModel):
 
         if len(input_ent[input_ent!=0]) == 0:
             # no input entities -> return 0s
-            hidden_states_ent = torch.zeros(input_ent.shape[0], input_ent.shape[1],self.entity_size)
+            hidden_states_ent = torch.zeros(input_ent.shape[0], input_ent.shape[1],self.entity_size).cuda()
         else:
 
             hidden_states_ent = self.dk_encoder(input_ent, hidden_states, k_v_s)
@@ -405,7 +405,7 @@ class DKEncoder(nn.Module):
             layer = self.layers[i]
             combined = layer(q, k, v)
 
-        hidden_states_ent = torch.zeros(input_ent.shape[0], input_ent.shape[1], self.k_v_dim*2)#.cuda()
+        hidden_states_ent = torch.zeros(input_ent.shape[0], input_ent.shape[1], self.k_v_dim*2).cuda()
         ent_pos_s = torch.nonzero(input_ent) # id start from 0
 
         for batch in range(input_ent.shape[0]):

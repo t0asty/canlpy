@@ -153,7 +153,7 @@ class ErnieEncoder(nn.Module):
 
     def forward(self, hidden_states, attention_mask, hidden_states_ent, attention_mask_ent, ent_mask, output_all_encoded_layers=True):
         all_encoder_layers = []
-        ent_mask = ent_mask.to(dtype=torch.float).unsqueeze(-1)
+        ent_mask = ent_mask.unsqueeze(-1)#.to(dtype=torch.float).unsqueeze(-1)
 
         for layer_module in self.layer:
             if(isinstance(layer_module, BertLayer)):
