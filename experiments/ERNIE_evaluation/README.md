@@ -13,7 +13,7 @@ You can find the datasets for fine-tuning and the knowledge graph representation
 ```shell
 tar -xvzf data.tar.gz
 ```
-to extract it. 
+to extract it. Move the content of `kg_embed` into `canlpy/canlpy/knowledge/ernie/`, all other folders stay in `data`. 
 
 To fine-tune then run from this folder
 
