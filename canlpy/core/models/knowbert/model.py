@@ -13,7 +13,7 @@ from canlpy.core.components.fusion.knowbert_fusion import SolderedKG
 from canlpy.core.util.file_utils import cached_path
 from canlpy.core.util.knowbert_tokenizer.vocabulary import Vocabulary
 
-from pytorch_pretrained_bert.modeling import BertForPreTraining, BertLayer, BertLayerNorm, BertConfig, BertEncoder
+from transformers import BertConfig, BertForPreTraining
 
 class KnowBert(nn.Module):
     """
@@ -262,7 +262,8 @@ class KnowBert(nn.Module):
                 # run bert layer in between previous and current SolderedKG 
                 for layer in self.pretrained_bert.bert.encoder.layer[
                                 start_layer_index:end_layer_index]:
-                    contextual_embeddings = layer(contextual_embeddings, attention_mask)
+                    #Only take first index due to the new transformers BertLayer that outputs a tuple
+                    contextual_embeddings = layer(hidden_states = contextual_embeddings, attention_mask = attention_mask)[0]
             start_layer_index = end_layer_index
 
             # run the SolderedKG component
