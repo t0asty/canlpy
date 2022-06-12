@@ -1,17 +1,18 @@
-#This file is adapted from the AllenNLP library at https://github.com/allenai/allennlp
-#Copyright by the AllenNLP authors.
+# This file is adapted from the AllenAI library at https://github.com/allenai/kb
+# Copyright by the AllenAI authors.
 
 from typing import Dict, List
 import copy
 
 import numpy as np
 
-from pytorch_pretrained_bert.tokenization import BertTokenizer, BasicTokenizer
+from transformers import BasicTokenizer, BertTokenizer
 
 from canlpy.core.util.knowbert_tokenizer.common import get_empty_candidates
 
 start_token = "[CLS]"
 sep_token = "[SEP]"
+never_split = ["[UNK]", "[SEP]", "[PAD]", "[CLS]", "[MASK]"]
 
 
 def truncate_sequence_pair(word_piece_tokens_a, word_piece_tokens_b, max_word_piece_sequence_length):
@@ -69,10 +70,11 @@ class BertTokenizerAndCandidateGenerator(TokenizerAndCandidateGenerator):
 
         # load BertTokenizer from huggingface
         self.candidate_generators = entity_candidate_generators
+        #NOTE: modified to add never_split for pytroch_pretrained compatibility
         self.bert_tokenizer = BertTokenizer.from_pretrained(
-            bert_model_type, do_lower_case=do_lower_case
+            bert_model_type, do_lower_case=do_lower_case,never_split=never_split
         )
-        self.bert_word_tokenizer = BasicTokenizer(do_lower_case=False)
+        self.bert_word_tokenizer = BasicTokenizer(do_lower_case=False,never_split=never_split)
         # Target length should include start and end token
         self.max_word_piece_sequence_length = max_word_piece_sequence_length
 

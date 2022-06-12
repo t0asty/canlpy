@@ -1,3 +1,6 @@
+# This file is adapted from the AllenAI library at https://github.com/allenai/kb
+# Copyright by the AllenAI authors.
+
 from typing import Dict, List
 import math
 import numpy as np
@@ -16,8 +19,9 @@ from canlpy.core.util.file_utils import cached_path
 from canlpy.core.models.knowbert.knowledge import WordNetAllEmbedding, EntityEmbedder,read_embeddings_from_text_file
 from canlpy.core.models.knowbert.metrics import F1Metric
 
-from pytorch_pretrained_bert.modeling import BertLayerNorm, BertConfig, BertEncoder
 
+from transformers import BertConfig
+from transformers.models.bert.modeling_bert import BertEncoder
 
 class DotAttentionWithPrior(nn.Module):
     """
@@ -196,10 +200,10 @@ class EntityDisambiguator(nn.Module):
                 contextual_embedding_dim, entity_embedding_dim)
         init_weights(self.bert_to_kg_projector, initializer_range)
 
-        self.projected_span_layer_norm = BertLayerNorm(entity_embedding_dim, eps=1e-5)
+        self.projected_span_layer_norm = nn.LayerNorm(entity_embedding_dim, eps=1e-5)
         init_weights(self.projected_span_layer_norm, initializer_range)
 
-        self.kg_layer_norm = BertLayerNorm(entity_embedding_dim, eps=1e-5)
+        self.kg_layer_norm = nn.LayerNorm(entity_embedding_dim, eps=1e-5)
         init_weights(self.kg_layer_norm, initializer_range)
 
         # already pretrained, don't init
@@ -279,7 +283,7 @@ class EntityDisambiguator(nn.Module):
         attention_mask = extend_attention_mask_for_bert(span_mask, get_dtype_for_module(self))
         return self.span_encoder(
             x, attention_mask,
-            output_all_encoded_layers=False
+            output_hidden_states=False #NOTE: changed from output_all_encoder_layers for transformers compatibility
         )
 
     def forward(self,
@@ -727,7 +731,7 @@ class SolderedKG(Fusion):
         #768
         self.contextual_embedding_dim = self.entity_linker.disambiguator.contextual_embedding_dim
 
-        self.weighted_entity_layer_norm = BertLayerNorm(self.entity_embedding_dim, eps=1e-5)
+        self.weighted_entity_layer_norm = nn.LayerNorm(self.entity_embedding_dim, eps=1e-5)
         init_weights(self.weighted_entity_layer_norm, 0.02)
 
         self.dropout = torch.nn.Dropout(0.1)
@@ -745,7 +749,7 @@ class SolderedKG(Fusion):
         # already init inside span attention layer
 
         # for the output!
-        self.output_layer_norm = BertLayerNorm(self.contextual_embedding_dim, eps=1e-5)
+        self.output_layer_norm = nn.LayerNorm(self.contextual_embedding_dim, eps=1e-5)
 
         #Project back from kg embedding to bert embeddding
         self.kg_to_bert_projection = torch.nn.Linear(
@@ -870,7 +874,7 @@ class SolderedKG(Fusion):
             candidate_entities: the embeddings of the candidate entities
             candidate_entity_priors: the prior of the candidate entities
             candidate_segment_ids: the segment ids of the candidate entities
-            
+
         Returns:
             a dictionary: 
             {'entity_attention_probs': entity_attention_probs,

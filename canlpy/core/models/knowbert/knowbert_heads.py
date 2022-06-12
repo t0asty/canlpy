@@ -1,8 +1,10 @@
+# This file is adapted from the AllenAI library at https://github.com/allenai/kb
+# Copyright by the AllenAI authors.
 
 import torch
 import torch.nn as nn
 from canlpy.core.models.knowbert.metrics import Average, CategoricalAccuracy, WeightedAverage, ExponentialMovingAverage, MeanReciprocalRank
-from pytorch_pretrained_bert.modeling import BertForPreTraining
+from transformers import BertForPreTraining
 
 #Knowbert with masked LM and NSP
 class KnowBertForPreTraining(nn.Module):

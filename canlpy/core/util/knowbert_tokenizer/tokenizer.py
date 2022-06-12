@@ -200,8 +200,6 @@ class KnowBertBatchifier:
         return cls(tokenizer_and_candidate_generator,entity_vocab)
 
 
-
-
 def _pad_to_shape(arr,out_shape,value):
     out = np.ones(out_shape, dtype=arr.dtype)*value
     #1D case
