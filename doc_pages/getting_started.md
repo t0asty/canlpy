@@ -21,7 +21,7 @@ tar -xvzf kg_embed.tar.gz
 
 Store the content of kg_embed in `canlpy/knowledge/ernie/`
 
-Download pre-trained ERNIE from [Google Drive](https://drive.google.com/uc?export=download&id=1Hdp_iqsF3xjFcWSRvklC5ppvvd2C0qim) and extract it.
+Download pre-trained ERNIE from [Google Drive](https://drive.google.com/file/d/1Hdp_iqsF3xjFcWSRvklC5ppvvd2C0qim/view?usp=sharing) and extract it.
 
 ```shell
 tar -xvzf ernie_base.tar.gz
