@@ -152,27 +152,14 @@ class TypingProcessor(DataProcessor):
 
 def load_ent_emb_static():
 
-    with open('./data/load_data_n/e1_e2_list_2D_Tensor.pkl', 'rb') as f:
-    #with open('code/knowledge_bert/load_data_test/e1_e2_list_2D_Tensor.pkl', 'rb') as f:
-    #with open('code/knowledge_bert/load_data/e1_e2.pkl', 'rb') as f:
-    #with open('code/knowledge_bert/load_data_test/e1_e2.pkl', 'rb') as f:
+    with open('../../canlpy/knowledge/cokebert/load_data_n/e1_e2_list_2D_Tensor.pkl', 'rb') as f:
         ent_neighbor = pickle.load(f)
 
-    with open('./data/load_data_n/e1_r_list_2D_Tensor.pkl', 'rb') as f:
-    #with open('code/knowledge_bert/load_data_test/e1_r_list_2D_Tensor.pkl', 'rb') as f:
-    #with open('code/knowledge_bert/load_data/e1_r.pkl', 'rb') as f:
-    #with open('code/knowledge_bert/load_data_test/e1_r.pkl', 'rb') as f:
+    with open('../../canlpy/knowledge/cokebert/load_data_n/e1_r_list_2D_Tensor.pkl', 'rb') as f:
         ent_r = pickle.load(f)
 
-    with open('./data/load_data_n/e1_outORin_list_2D_Tensor.pkl', 'rb') as f:
-    #with open('code/knowledge_bert/load_data_test/e1_outORin_list_2D_Tensor.pkl', 'rb') as f:
-    #with open('code/knowledge_bert/load_data/e1_outORin.pkl', 'rb') as f:
-    #with open('code/knowledge_bert/load_data_test/e1_outORin.pkl', 'rb') as f:
+    with open('../../canlpy/knowledge/cokebert/load_data_n/e1_outORin_list_2D_Tensor.pkl', 'rb') as f:
         ent_outORin = pickle.load(f)
-
-    #ent_neighbor = torch.nn.Embedding.from_pretrained(ent_neighbor)
-    #ent_r = torch.nn.Embedding.from_pretrained(ent_r)
-    #ent_outORin = torch.nn.Embedding.from_pretrained(ent_outORin)
 
     return ent_neighbor, ent_r, ent_outORin
 
@@ -182,7 +169,7 @@ def load_knowledge():
     #load KG emb
     vecs = []
     vecs.append([0]*100) # CLS
-    with open("./data/kg_embed/entity2vec.vec", 'r') as fin:
+    with open("../../canlpy/knowledge/cokebert/kg_embed/entity2vec.vec", 'r') as fin:
         for line in fin:
             vec = line.strip().split('\t')
             vec = [float(x) for x in vec]
@@ -194,7 +181,7 @@ def load_knowledge():
     #load relation emb
     vecs = []
     vecs.append([0]*100) # CLS
-    with open("./data/kg_embed/relation2vec.vec", 'r') as fin:
+    with open("../../canlpy/knowledge/cokebert/kg_embed/relation2vec.vec", 'r') as fin:
         for line in fin:
             vec = line.strip().split('\t')
             vec = [float(x) for x in vec]
@@ -285,7 +272,7 @@ def convert_examples_to_features(examples, label_list, max_seq_length, tokenizer
     label_map = {label : i for i, label in enumerate(label_list)}
 
     entity2id = {}
-    with open("./data/kg_embed/entity2id.txt") as fin:
+    with open("../../canlpy/knowledge/cokebert/kg_embed/entity2id.txt") as fin:
         fin.readline()
         for line in fin:
             qid, eid = line.strip().split('\t')
@@ -586,7 +573,6 @@ def main():
 
     # Prepare model
     model, _ = CokeBertForEntityTyping.from_pretrained(args.ernie_model,
-              cache_dir=CACHE_DIRECTORY / 'distributed_{}'.format(args.local_rank),
               num_labels = len(label_list))
     if args.fp16:
         model.half()
@@ -675,7 +661,6 @@ def main():
                 try:
                     loss = model(input_ids, segment_ids, input_mask, input_ent.float(), ent_mask.float(), labels.float(), [(k_1.float(), v_1.float()), (k_2.float(), v_2.float())])
                 except ValueError as e:
-                    print(e)
                     continue
                 if n_gpu > 1:
                     loss = loss.mean() # mean() to average on multi-gpu.

@@ -156,7 +156,7 @@ def convert_examples_to_features(examples, label_list, max_seq_length, tokenizer
     label_map = {label : i for i, label in enumerate(label_list)}
 
     entity2id = {}
-    with open("./data/kg_embed/entity2id.txt") as fin:
+    with open("../../canlpy/knowledge/cokebert/kg_embed/entity2id.txt") as fin:
         fin.readline()
         for line in fin:
             qid, eid = line.strip().split('\t')
@@ -292,13 +292,13 @@ def warmup_linear(x, warmup=0.002):
 
 def load_ent_emb_static():
 
-    with open('./data/load_data_n/e1_e2_list_2D_Tensor.pkl', 'rb') as f:
+    with open('../../canlpy/knowledge/cokebert/load_data_n/e1_e2_list_2D_Tensor.pkl', 'rb') as f:
         ent_neighbor = pickle.load(f)
 
-    with open('./data/load_data_n/e1_r_list_2D_Tensor.pkl', 'rb') as f:
+    with open('../../canlpy/knowledge/cokebert/load_data_n/e1_r_list_2D_Tensor.pkl', 'rb') as f:
         ent_r = pickle.load(f)
 
-    with open('./data/load_data_n/e1_outORin_list_2D_Tensor.pkl', 'rb') as f:
+    with open('../../canlpy/knowledge/cokebert/load_data_n/e1_outORin_list_2D_Tensor.pkl', 'rb') as f:
         ent_outORin = pickle.load(f)
 
     return ent_neighbor, ent_r, ent_outORin
@@ -308,7 +308,7 @@ def load_knowledge():
     #load KG emb
     vecs = []
     vecs.append([0]*100) # CLS
-    with open("./data/kg_embed/entity2vec.vec", 'r') as fin:
+    with open("../../canlpy/knowledge/cokebert/kg_embed/entity2vec.vec", 'r') as fin:
         for line in fin:
             vec = line.strip().split('\t')
             vec = [float(x) for x in vec]
@@ -320,7 +320,7 @@ def load_knowledge():
     #load relation emb
     vecs = []
     vecs.append([0]*100) # CLS
-    with open("./data/kg_embed/relation2vec.vec", 'r') as fin:
+    with open("../../canlpy/knowledge/cokebert/kg_embed/relation2vec.vec", 'r') as fin:
         for line in fin:
             vec = line.strip().split('\t')
             vec = [float(x) for x in vec]
@@ -613,7 +613,6 @@ def main():
                     tmp_eval_loss = model(input_ids, segment_ids, input_mask, input_ent.float(), ent_mask.float(), labels.float(), [(k_1.float(), v_1.float()), (k_2.float(), v_2.float())])
                     logits = model(input_ids, segment_ids, input_mask, input_ent.float(), ent_mask.float(), None, [(k_1.float(), v_1.float()), (k_2.float(), v_2.float())])
                 except ValueError as e:
-                    print(e)
                     continue
 
             logits = logits.detach().cpu().numpy()
