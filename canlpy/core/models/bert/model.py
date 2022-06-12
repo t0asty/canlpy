@@ -38,6 +38,7 @@ class MultiHeadAttention(nn.Module):
         after the attention.
     """
     def __init__(self, hidden_size,num_attention_heads,attention_probs_dropout_prob):
+        """ """
         super().__init__()
         if (hidden_size % num_attention_heads != 0):
             raise ValueError(f"The hidden size ({hidden_size}) is not a multiple of the number of attention "
@@ -55,11 +56,13 @@ class MultiHeadAttention(nn.Module):
 
     #Used to go from 1 headed attention to multi-headed attention
     def transpose_for_scores(self, x):
+        """ """
         new_x_shape = x.size()[:-1] + (self.num_attention_heads, self.attention_head_size)
         x = x.view(*new_x_shape)
         return x.permute(0, 2, 1, 3)
 
     def forward(self, hidden_states, attention_mask):
+        """ """
         mixed_query_layer = self.query(hidden_states)
         mixed_key_layer = self.key(hidden_states)
         mixed_value_layer = self.value(hidden_states)
@@ -112,6 +115,7 @@ class BertAttention(nn.Module):
         hidden_states: a torch.FloatTensor of shape [batch_size, sequence_length,tokens_embedding_size] the produced embeddings.
     """
     def __init__(self, hidden_size,num_attention_heads,attention_probs_dropout_prob,hidden_dropout_prob):
+        """ """
         super().__init__()
         ##BertSelfAttention
         self.multi_head_attention = MultiHeadAttention(hidden_size,num_attention_heads,attention_probs_dropout_prob)#BertSelfAttention
@@ -119,6 +123,7 @@ class BertAttention(nn.Module):
         self.skip_layer = DenseSkipLayer(hidden_size,hidden_size,hidden_dropout_prob)
     
     def forward(self, hidden_states, attention_mask):
+        """ """
         attention = self.multi_head_attention(hidden_states, attention_mask)
         hidden_states = self.skip_layer(attention,hidden_states)
 
@@ -150,6 +155,7 @@ class BertEmbeddings(nn.Module):
 
     """
     def __init__(self, vocab_size,hidden_size,max_position_embeddings,hidden_dropout_prob,type_vocab_size):
+        """ """
         super().__init__()
         self.word_embeddings = nn.Embedding(vocab_size, hidden_size)
         self.position_embeddings = nn.Embedding(max_position_embeddings, hidden_size)
@@ -161,6 +167,7 @@ class BertEmbeddings(nn.Module):
         self.dropout = nn.Dropout(hidden_dropout_prob)
 
     def forward(self, input_ids, token_type_ids=None):
+        """ """
         seq_length = input_ids.size(1)
         position_ids = torch.arange(seq_length, dtype=torch.long, device=input_ids.device)
         position_ids = position_ids.unsqueeze(0).expand_as(input_ids)
@@ -197,12 +204,14 @@ class DenseSkipLayer(nn.Module):
     """
 
     def __init__(self, input_size,output_size,dropout_prob): 
+        """ """
         super().__init__()
         self.dense = nn.Linear(input_size, output_size)
         self.LayerNorm = LayerNorm(output_size, eps=1e-12)
         self.dropout = nn.Dropout(dropout_prob)
 
     def forward(self, hidden_states, skip_tensor):
+        """ """
         hidden_states = self.dense(hidden_states)
         hidden_states = self.dropout(hidden_states)
         #Normalize after adding skip connection
@@ -239,6 +248,7 @@ class BertLayer(nn.Module):
     """
 
     def __init__(self, hidden_size, intermediate_size,num_attention_heads,attention_probs_dropout_prob,hidden_dropout_prob,activation_fn):
+        """ """
         super().__init__()
         #BertAttention_simple
         self.attention = BertAttention(hidden_size,num_attention_heads,attention_probs_dropout_prob,hidden_dropout_prob)
@@ -251,7 +261,7 @@ class BertLayer(nn.Module):
         self.skip_layer_out = DenseSkipLayer(intermediate_size,hidden_size,hidden_dropout_prob)
 
     def forward(self, hidden_states, attention_mask):
-
+        """ """
         #BertAttention_simple
         hidden_states = self.attention(hidden_states, attention_mask)
 
@@ -280,11 +290,13 @@ class BertPooler(nn.Module):
     """
     
     def __init__(self, hidden_size):
+        """ """
         super().__init__()
         self.dense = nn.Linear(hidden_size, hidden_size)
         self.activation = nn.Tanh()
 
     def forward(self, hidden_states):
+        """ """
         # We "pool" the model by simply taking the hidden state corresponding
         # to the first token (CLS).
         first_token_tensor = hidden_states[:, 0]
@@ -319,6 +331,7 @@ class LayerNorm(nn.Module):
         self.variance_epsilon = eps
 
     def forward(self, x):
+        """ """
         u = x.mean(-1, keepdim=True)
         s = (x - u).pow(2).mean(-1, keepdim=True)
         x = (x - u) / torch.sqrt(s + self.variance_epsilon)
