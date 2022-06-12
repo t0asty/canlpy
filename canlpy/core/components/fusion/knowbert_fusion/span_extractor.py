@@ -24,28 +24,26 @@ class SpanExtractor(nn.Module):
         such as concatenation of the start and end spans, attention over the
         vectors contained inside the span, etc.
 
-        Parameters
-        ----------
-        sequence_tensor : ``torch.FloatTensor``, required.
-            A tensor of shape (batch_size, sequence_length, embedding_size)
-            representing an embedded sequence of words.
-        span_indices : ``torch.LongTensor``, required.
-            A tensor of shape ``(batch_size, num_spans, 2)``, where the last
-            dimension represents the inclusive start and end indices of the
-            span to be extracted from the ``sequence_tensor``.
-        sequence_mask : ``torch.LongTensor``, optional (default = ``None``).
-            A tensor of shape (batch_size, sequence_length) representing padded
-            elements of the sequence.
-        span_indices_mask : ``torch.LongTensor``, optional (default = ``None``).
-            A tensor of shape (batch_size, num_spans) representing the valid
-            spans in the ``indices`` tensor. This mask is optional because
-            sometimes it's easier to worry about masking after calling this
-            function, rather than passing a mask directly.
+        Args:
+            sequence_tensor : ``torch.FloatTensor``, required.
+                A tensor of shape (batch_size, sequence_length, embedding_size)
+                representing an embedded sequence of words.
+            span_indices : ``torch.LongTensor``, required.
+                A tensor of shape ``(batch_size, num_spans, 2)``, where the last
+                dimension represents the inclusive start and end indices of the
+                span to be extracted from the ``sequence_tensor``.
+            sequence_mask : ``torch.LongTensor``, optional (default = ``None``).
+                A tensor of shape (batch_size, sequence_length) representing padded
+                elements of the sequence.
+            span_indices_mask : ``torch.LongTensor``, optional (default = ``None``).
+                A tensor of shape (batch_size, num_spans) representing the valid
+                spans in the ``indices`` tensor. This mask is optional because
+                sometimes it's easier to worry about masking after calling this
+                function, rather than passing a mask directly.
 
-        Returns
-        -------
-        A tensor of shape ``(batch_size, num_spans, embedded_span_size)``,
-        where ``embedded_span_size`` depends on the way spans are represented.
+        Returns:
+            A tensor of shape ``(batch_size, num_spans, embedded_span_size)``,
+            where ``embedded_span_size`` depends on the way spans are represented.
         """
         raise NotImplementedError
 
@@ -71,18 +69,16 @@ class SelfAttentiveSpanExtractor(SpanExtractor):
     corresponding vector representations of the words in the span by this distribution,
     returning a weighted representation of each span.
 
-    Parameters
-    ----------
-    input_dim : ``int``, required.
-        The final dimension of the ``sequence_tensor``.
+    Parameters:
+        input_dim : ``int``, required.
+            The final dimension of the ``sequence_tensor``.
 
-    Returns
-    -------
-    attended_text_embeddings : ``torch.FloatTensor``.
-        A tensor of shape (batch_size, num_spans, input_dim), which each span representation
-        is formed by locally normalising a global attention over the sequence. The only way
-        in which the attention distribution differs over different spans is in the set of words
-        over which they are normalized.
+    Returns:
+        attended_text_embeddings : ``torch.FloatTensor``.
+            A tensor of shape (batch_size, num_spans, input_dim), which each span representation
+            is formed by locally normalising a global attention over the sequence. The only way
+            in which the attention distribution differs over different spans is in the set of words
+            over which they are normalized.
     """
     def __init__(self,
                  input_dim: int) -> None:
@@ -101,6 +97,7 @@ class SelfAttentiveSpanExtractor(SpanExtractor):
                 span_indices: torch.LongTensor,
                 sequence_mask: torch.LongTensor = None,
                 span_indices_mask: torch.LongTensor = None) -> torch.FloatTensor:
+        """ """
 
         dtype = sequence_tensor.dtype
 
@@ -182,27 +179,14 @@ def flatten_and_batch_shift_indices(indices: torch.Tensor,
     correctly indexes into the flattened target. The sequence length of the target must be
     provided to compute the appropriate offsets.
 
-    .. code-block:: python
+    Parameters:
+        indices : ``torch.LongTensor``, required.
+        sequence_length : ``int``, required.
+            The length of the sequence the indices index into.
+            This must be the second dimension of the tensor.
 
-        indices = torch.ones([2,3], dtype=torch.long)
-        # Sequence length of the target tensor.
-        sequence_length = 10
-        shifted_indices = flatten_and_batch_shift_indices(indices, sequence_length)
-        # Indices into the second element in the batch are correctly shifted
-        # to take into account that the target tensor will be flattened before
-        # the indices are applied.
-        assert shifted_indices == [1, 1, 1, 11, 11, 11]
-
-    Parameters
-    ----------
-    indices : ``torch.LongTensor``, required.
-    sequence_length : ``int``, required.
-        The length of the sequence the indices index into.
-        This must be the second dimension of the tensor.
-
-    Returns
-    -------
-    offset_indices : ``torch.LongTensor``
+    Returns:
+        offset_indices : ``torch.LongTensor``
     """
     # Shape: (batch_size)
     offsets = torch.arange(indices.size(0), device=indices.device) * sequence_length
@@ -228,32 +212,22 @@ def batched_index_select(target: torch.Tensor,
     have size ``(batch_size, d_1, ..., d_n, embedding_size)``. This can use the optionally
     precomputed :func:`~flattened_indices` with size ``(batch_size * d_1 * ... * d_n)`` if given.
 
-    An example use case of this function is looking up the start and end indices of spans in a
-    sequence tensor. This is used in the
-    :class:`~allennlp.models.coreference_resolution.CoreferenceResolver`. Model to select
-    contextual word representations corresponding to the start and end indices of mentions. The key
-    reason this can't be done with basic torch functions is that we want to be able to use look-up
-    tensors with an arbitrary number of dimensions (for example, in the coref model, we don't know
-    a-priori how many spans we are looking up).
+    Parameters:
+        target : ``torch.Tensor``, required.
+            A 3 dimensional tensor of shape (batch_size, sequence_length, embedding_size).
+            This is the tensor to be indexed.
+        indices : ``torch.LongTensor``
+            A tensor of shape (batch_size, ...), where each element is an index into the
+            ``sequence_length`` dimension of the ``target`` tensor.
+        flattened_indices : Optional[torch.Tensor], optional (default = None)
+            An optional tensor representing the result of calling :func:~`flatten_and_batch_shift_indices`
+            on ``indices``. This is helpful in the case that the indices can be flattened once and
+            cached for many batch lookups.
 
-    Parameters
-    ----------
-    target : ``torch.Tensor``, required.
-        A 3 dimensional tensor of shape (batch_size, sequence_length, embedding_size).
-        This is the tensor to be indexed.
-    indices : ``torch.LongTensor``
-        A tensor of shape (batch_size, ...), where each element is an index into the
-        ``sequence_length`` dimension of the ``target`` tensor.
-    flattened_indices : Optional[torch.Tensor], optional (default = None)
-        An optional tensor representing the result of calling :func:~`flatten_and_batch_shift_indices`
-        on ``indices``. This is helpful in the case that the indices can be flattened once and
-        cached for many batch lookups.
-
-    Returns
-    -------
-    selected_targets : ``torch.Tensor``
-        A tensor with shape [indices.size(), target.size(-1)] representing the embedded indices
-        extracted from the batch flattened target tensor.
+    Returns:
+        selected_targets : ``torch.Tensor``
+            A tensor with shape [indices.size(), target.size(-1)] representing the embedded indices
+            extracted from the batch flattened target tensor.
     """
     if flattened_indices is None:
         # Shape: (batch_size * d_1 * ... * d_n)
@@ -278,20 +252,25 @@ def masked_softmax(vector: torch.Tensor,
     ``torch.nn.functional.softmax(vector)`` does not work if some elements of ``vector`` should be
     masked.  This performs a softmax on just the non-masked portions of ``vector``.  Passing
     ``None`` in for the mask is also acceptable; you'll just get a regular softmax.
-
-    ``vector`` can have an arbitrary number of dimensions; the only requirement is that ``mask`` is
-    broadcastable to ``vector's`` shape.  If ``mask`` has fewer dimensions than ``vector``, we will
-    unsqueeze on dimension 1 until they match.  If you need a different unsqueezing of your mask,
-    do it yourself before passing the mask into this function.
-
-    If ``memory_efficient`` is set to true, we will simply use a very large negative number for those
-    masked positions so that the probabilities of those positions would be approximately 0.
-    This is not accurate in math, but works for most cases and consumes less memory.
-
     In the case that the input vector is completely masked and ``memory_efficient`` is false, this function
     returns an array of ``0.0``. This behavior may cause ``NaN`` if this is used as the last layer of
     a model that uses categorical cross-entropy loss. Instead, if ``memory_efficient`` is true, this function
     will treat every element as equal, and do softmax over equal numbers.
+
+    Args:
+        vector: tensor of arbitrary number of dimensions; the only requirement is that ``mask`` is
+            broadcastable to ``vector's`` shape.  If ``mask`` has fewer dimensions than ``vector``, we will
+            unsqueeze on dimension 1 until they match.  If you need a different unsqueezing of your mask,
+            do it yourself before passing the mask into this function.
+
+        mask: tensor determining what values of `vector` should be masked
+
+        memory_efficient: if set to true, simply use a very large negative number for those
+            masked positions so that the probabilities of those positions would be approximately 0.
+            This is not accurate in math, but works for most cases and consumes less memory.
+
+    Returns:
+        result: the result of applying softmax on the input vector
     """
     if mask is None:
         result = torch.nn.functional.softmax(vector, dim=dim)

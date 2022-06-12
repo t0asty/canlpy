@@ -20,6 +20,16 @@ from pytorch_pretrained_bert.modeling import BertLayerNorm, BertConfig, BertEnco
 
 
 class DotAttentionWithPrior(nn.Module):
+    """
+    Performs a MLP on the entity prior and the cosine similarity between the span and entity embedding to compute an entity score
+
+    Args:
+        output_feed_forward_hidden_dim: the MLP hidden dim
+        weighted_entity_threshold: the entity linking score threshold under which an entity is no longer considered
+        null_embedding: the default embedding for a null entity
+        initializer_range: the std range for the linear layer initialization
+    
+    """
     def __init__(self,
                  output_feed_forward_hidden_dim: int = 100,
                  weighted_entity_threshold: float = None,
@@ -46,20 +56,20 @@ class DotAttentionWithPrior(nn.Module):
             candidate_entity_prior,
             entity_mask):
         """
-        projected_span_representations = (batch_size, num_spans, entity_dim)
-        candidate_entity_embeddings = (batch_size, num_spans, num_candidates, entity_embedding_dim)
-        candidate_entity_prior = (batch_size, num_spans, num_candidates)
-            with prior probability of each candidate entity.
-            0 <= candidate_entity_prior <= 1 and candidate_entity_prior.sum(dim=-1) == 1
-        entity_mask = (batch_size, num_spans, num_candidates)
-            with 0/1 bool of whether it is a valid candidate
+        Args:
+            projected_span_representations: (batch_size, num_spans, entity_dim)
+            candidate_entity_embeddings: (batch_size, num_spans, num_candidates, entity_embedding_dim)
+            candidate_entity_prior: (batch_size, num_spans, num_candidates)
+                with prior probability of each candidate entity.
+                0 <= candidate_entity_prior <= 1 and candidate_entity_prior.sum(dim=-1) == 1
+                entity_mask = (batch_size, num_spans, num_candidates)
+                    with 0/1 bool of whether it is a valid candidate
 
-        returns dict with:
-            linking_scores: linking sccore to each entity in each span
-                (batch_size, num_spans, num_candidates)
-                masked with -10000 for invalid links
-            weighted_entity_embeddings: weighted entity embedding
-                (batch_size, num_spans, entity_dim)
+        Returns:
+            dict with:
+            linking_scores: linking score to each entity in each span (batch_size, num_spans, num_candidates)
+                    masked with -10000 for invalid links
+            weighted_entity_embeddings: weighted entity embedding (batch_size, num_spans, entity_dim)
         """
         # dot product between span embedding and entity embeddings, scaled
         # by sqrt(dimension) as in Transformer
@@ -104,12 +114,14 @@ class DotAttentionWithPrior(nn.Module):
         """
         Get the entity linking weighted entity embedding
 
-        linking_scores = (batch_size, num_spans, num_candidates)
-             with unnormalized scores and masked with very small value
-            (-10000) for invalid candidates.
-        candidate_entity_embeddings = (batch_size, num_spans, num_candidates, entity_embedding_dim)
+        Args:
+            linking_scores: (batch_size, num_spans, num_candidates)
+                with unnormalized scores and masked with very small value
+                (-10000) for invalid candidates.
+            candidate_entity_embeddings: (batch_size, num_spans, num_candidates, entity_embedding_dim)
 
-        returns weighted_entity_embeddings = (batch_size, num_spans, entity_dim)
+        Returns:
+            weighted_entity_embeddings: (batch_size, num_spans, entity_dim)
         """
         # compute softmax of linking scores
         # if we are using the decode threshold, set all scores less then
@@ -137,6 +149,9 @@ class DotAttentionWithPrior(nn.Module):
         return weighted_entity_embeddings
 
 class EntityDisambiguator(nn.Module):
+    """
+    Aligns the bert and KG vector space by learning a mapping between them.
+    """
     def __init__(self,
                  contextual_embedding_dim: int,
                  entity_embedding_dim: int,
@@ -149,24 +164,22 @@ class EntityDisambiguator(nn.Module):
                  weighted_entity_threshold: float = None,
                  null_embedding: torch.Tensor = None):
         """
-        Idea: Align the bert and KG vector space by learning a mapping between
-            them.
-        """
-        """
-        Extra added:
-        contextual_embedding_dim: dimension of token embeddding
-        entity_embedding_dim: dimension of entity embeddings
-        entity_embeddings: contains embeddings of entity id to vector
-        max_sequence_length: length of max sequence => unused
-        span_encoder_config: configuraton of span encoder (hidden_size,num_hidden_layers,num_attention_heads,intermediate_size)
-        dropout: dropout probability in training 
-        output_feed_forward_hidden_dim: #hidden dim of 1 hidden layer MLP to compute similarity between mention and KB entity 
-                                        MLP(prior,mention_embedding @ entity_embedding)
+        
 
-        initializer_range: std of normal weight initialization
-        weighted_entity_threshold: similarity threshold (computed using MLP (DotAttentionWithPrior)) 
-                                    under which an entity is not considered for the weighted sum representation of entity
-        null_embedding: enbedding of null entity
+        Args:
+            contextual_embedding_dim: dimension of token embeddding
+            entity_embedding_dim: dimension of entity embeddings
+            entity_embeddings: contains embeddings of entity id to vector
+            max_sequence_length: length of max sequence (unused)
+            span_encoder_config: configuraton of span encoder (hidden_size,num_hidden_layers,num_attention_heads,intermediate_size)
+            dropout: dropout probability in training 
+            output_feed_forward_hidden_dim: #hidden dim of 1 hidden layer MLP to compute similarity between mention and KB entity 
+                                            MLP(prior,mention_embedding @ entity_embedding)
+
+            initializer_range: std of normal weight initialization
+            weighted_entity_threshold: similarity threshold (computed using MLP (DotAttentionWithPrior)) 
+                                        under which an entity is not considered for the weighted sum representation of entity
+            null_embedding: enbedding of null entity
 
         """
 
@@ -217,6 +230,13 @@ class EntityDisambiguator(nn.Module):
             init_weights(self.span_encoder, initializer_range)
 
     def unfreeze(self, mode):
+        """ 
+        Freezes or unfreezes some of the weights depending on the provided mode
+        
+        `entity_linking`: only unfreezes the entity linker weights
+        `freeze`: freezes all the weights
+        else: unfreezes all the weights
+        """
         def _is_in_alignment(n):
             if 'bert_to_kg_projector' in n:
                 return True
@@ -272,20 +292,19 @@ class EntityDisambiguator(nn.Module):
                 **kwargs
         ):
         """
-        contextual_embeddings = (batch_size, timesteps, dim) output
-            from language model
-        mask = (batch_size, num_times)
-        candidate_spans = (batch_size, max_num_spans, 2) with candidate
-            mention spans. This gives the start / end location for each
-            span such span i in row k has:
-                start, end = candidate_spans[k, i, :]
-                span_embeddings = contextual_embeddings[k, start:end, :]
-            it is padded with -1
-        candidate_entities = (batch_size, max_num_spans, max_entity_ids)
-            padded with 0
-        candidate_entity_prior = (batch_size, max_num_spans, max_entity_ids)
-            with prior probability of each candidate entity.
-            0 <= candidate_entity_prior <= 1 and candidate_entity_prior.sum(dim=-1) == 1
+
+        Args:
+            contextual_embeddings: (batch_size, timesteps, dim) output from language model
+            mask: (batch_size, num_times)
+            candidate_spans: (batch_size, max_num_spans, 2) with candidate
+                mention spans. This gives the start / end location for each
+                span such span i in row k has:
+                    start, end = candidate_spans[k, i, :]
+                    span_embeddings = contextual_embeddings[k, start:end, :]
+                it is padded with -1
+            candidate_entities: (batch_size, max_num_spans, max_entity_ids), padded with 0
+            candidate_entity_prior: (batch_size, max_num_spans, max_entity_ids) with prior probability of each candidate entity.
+                0 <= candidate_entity_prior <= 1 and candidate_entity_prior.sum(dim=-1) == 1
 
         Returns:
             linking sccore to each entity in each span
@@ -333,6 +352,18 @@ class EntityDisambiguator(nn.Module):
         return return_dict
 
 class EntityLinkingBase(nn.Module):
+    """
+    Base class to compute the loss of the entity linking module
+
+
+    Parameters:
+        null_entity_id: the id of the null_entity
+        margin: the margin if margin loss is used
+        decode_threshold: the attention score threshold
+        loss_type: the type of loss, `margin` or `threshold`
+    
+    """
+
     def __init__(self,
                  null_entity_id: int,
                  margin: float = 0.2,
@@ -572,6 +603,12 @@ class EntityLinkingBase(nn.Module):
 
 #Does equation 1,2,3,4,5
 class EntityLinkingWithCandidateMentions(EntityLinkingBase):
+
+    """
+    Class with no parameters that forwards arguments to entity disambiguator and computes the loss
+    Args:
+        see `EntityDisambiguator`
+    """
     def __init__(self,
                  null_entity_id: int,
                  entity_embedding: EntityEmbedder = None,
@@ -596,8 +633,6 @@ class EntityLinkingWithCandidateMentions(EntityLinkingBase):
         else:
             null_embedding = entity_embedding.weight[null_entity_id, :]
 
-        #NOTE: this model holds no parameter: all the work is done by EntityDisambiguator => can remove this class??
-
         entity_embedding_dim = entity_embedding.embedding_dim
         
         if type(entity_embedding) == WordNetAllEmbedding:
@@ -620,7 +655,6 @@ class EntityLinkingWithCandidateMentions(EntityLinkingBase):
                  initializer_range=initializer_range,
                  weighted_entity_threshold=weighted_entity_threshold,
                  null_embedding=null_embedding)
-
 
     def get_metrics(self, reset: bool = False):
         metrics = super().get_metrics(reset)
@@ -665,6 +699,16 @@ class EntityLinkingWithCandidateMentions(EntityLinkingBase):
         return return_dict
 
 class SolderedKG(Fusion):
+    """
+    KnowBert's Fusion class
+
+    Parameters:
+        entity_linker: the module that computes the entity scores
+        span_attention_config: the configuration for the span attention layer
+        should_init_kg_to_bert_inverse: whether to init the second projection layer to the inverse of the first
+            see equation (7) of paper for more details
+        freeze: whether to freeze the parameters of the model
+    """
     def __init__(self,
                  entity_linker: nn.Module,
                  span_attention_config: Dict[str, int], 
@@ -717,6 +761,16 @@ class SolderedKG(Fusion):
 
     @classmethod
     def from_config(cls,config,entity_vocabulary):
+        """
+        Creates a SolderedKG from a config class
+
+        Args:
+            config: the config class
+            entity_vocabulary: the Vocabulary class for the entities
+
+        Returns:
+            model: a SolderedKG class
+        """
         entity_linker_config = find_value(config,"entity_linker")
         contextual_embedding_dim = entity_linker_config["contextual_embedding_dim"]
 
@@ -740,8 +794,6 @@ class SolderedKG(Fusion):
         else:
             raise ValueError("Cannot find embedding type in config file")
 
-
-        
         entity_linker_config.pop("namespace",None)#Not needed
         entity_linker_config.pop("type",None)#Not needed
 
@@ -775,6 +827,12 @@ class SolderedKG(Fusion):
         self.kg_to_bert_projection.bias.data.copy_(torch.tensor(b_pseudo_inv))
 
     def unfreeze(self, mode):
+        """
+        Freezes/unfreezes specific weights of the model
+        Args:
+            mode: the freezing mode, if `entity_linking`, freeze all parameters except the entity linker, 
+                else, unfreeze all the parameterss
+        """
         if self._freeze_all:
             for p in self.parameters():
                 p.requires_grad_(False)
@@ -803,6 +861,22 @@ class SolderedKG(Fusion):
                 candidate_entity_priors: torch.Tensor,
                 candidate_segment_ids: torch.Tensor,
                 **kwargs):
+
+        """
+        Args:
+            contextual_embeddings: the token embeddings
+            tokens_mask: the tokens mask
+            candidate_spans: the spans of the candidate entities
+            candidate_entities: the embeddings of the candidate entities
+            candidate_entity_priors: the prior of the candidate entities
+            candidate_segment_ids: the segment ids of the candidate entities
+            
+        Returns:
+            a dictionnary: 
+            {'entity_attention_probs': entity_attention_probs,
+            'contextual_embeddings': new_contextual_embeddings,
+            'linking_scores': linker_output['linking_scores']}
+        """
 
         linker_output = self.entity_linker(
                 contextual_embeddings, tokens_mask,
