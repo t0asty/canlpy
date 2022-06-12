@@ -1,7 +1,7 @@
 # ERNIE Experiments
 
 First make sure that you have the pretrained ERNIE model in `canlpy/canlpy/pretrained_models/ernie`.  
-If that is not the case, you find the pretrained ERNIE model provided by the authors of the ERNIE paper, which is available from [here](https://drive.google.com/open?id=1DVGADbyEgjjpsUlmQaqN6i043SZvHPu5). Then run
+If that is not the case, you find the pretrained ERNIE model provided by the authors of the ERNIE paper, which is available from [here](https://drive.google.com/file/d/1Hdp_iqsF3xjFcWSRvklC5ppvvd2C0qim/view?usp=sharing). Then run
 
 ```shell
 tar -xvzf ernie_base.tar.gz
