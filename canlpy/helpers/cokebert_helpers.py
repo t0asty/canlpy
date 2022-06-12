@@ -17,7 +17,7 @@ def load_k_v_queryR(input_ent, ent_to_neighbors, ent_to_relations, ent_to_outORi
 
         Returns:
             list of k_i, v_i vectors as input for the dynamic knowledge encoder
-        """"
+        """
         input_ent = input_ent.cpu()
 
         ent_pos_s = torch.nonzero(input_ent)
