@@ -9,7 +9,7 @@ import tarfile
 import os
 
 from canlpy.core.util.util import get_dtype_for_module, extend_attention_mask_for_bert, find_value
-from canlpy.core.components.fusion.knowbert_fusion import SolderedKG
+from canlpy.core.components.fusion.knowbert_fusion.soldered_kg import SolderedKG
 from canlpy.core.util.file_utils import cached_path
 from canlpy.core.util.knowbert_tokenizer.vocabulary import Vocabulary
 
