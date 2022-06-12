@@ -12,4 +12,16 @@ def gelu(x):
 ACT2FN = {"gelu": gelu, "relu": nn.functional.relu, "swish": nn.functional.silu}
 
 def get_activation_function(name:str):
+    """Map string to activation function
+
+    Args:
+        name (str): name of the activation function
+
+    Returns:
+        activation function that name corresponds to
+
+    Raises:
+        KeyError: If name has no match
+    
+    """
     return ACT2FN[name]
