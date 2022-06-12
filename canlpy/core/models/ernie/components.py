@@ -1,4 +1,5 @@
 import copy
+import torch
 from torch import nn
 from canlpy.core.models.bert.model import BertLayer, DenseSkipLayer, BertAttention
 from canlpy.core.components.fusion import ErnieFusion
@@ -152,7 +153,7 @@ class ErnieEncoder(nn.Module):
 
     def forward(self, hidden_states, attention_mask, hidden_states_ent, attention_mask_ent, ent_mask, output_all_encoded_layers=True):
         all_encoder_layers = []
-        ent_mask = ent_mask.to(dtype=next(self.parameters()).dtype).unsqueeze(-1)
+        ent_mask = ent_mask.to(dtype=torch.float).unsqueeze(-1)
 
         for layer_module in self.layer:
             if(isinstance(layer_module, BertLayer)):

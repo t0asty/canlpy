@@ -173,12 +173,12 @@ class PreTrainedErnieModel(nn.Module):
                 mapping = json.load(file)
 
             for old_key,new_key in mapping.items():
-                if(new_key in model.state_dict()):
+                if(new_key in model.state_dict()) and (old_key in state_dict.keys()):
                     model_shape = model.state_dict()[new_key].shape
                     if(model_shape!=state_dict[old_key].shape):
                         logger.error(f'model.state_dict() {new_key}:{model_shape} != state_dict {old_key}:{state_dict[old_key].shape}')
                         
-                state_dict[new_key] = state_dict.pop(old_key)
+                    state_dict[new_key] = state_dict.pop(old_key)
 
         missing_keys,unexpected_keys =  model.load_state_dict(state_dict,strict=False)
         logger.info(f"Missing keys are: \n {missing_keys}")
@@ -263,9 +263,9 @@ class ErnieModel(PreTrainedErnieModel):
         # positions we want to attend and -10000.0 for masked positions.
         # Since we are adding it to the raw scores before the softmax, this is
         # effectively the same as removing these entirely.
-        extended_attention_mask = extended_attention_mask.to(dtype=next(self.parameters()).dtype) # fp16 compatibility
+        extended_attention_mask = extended_attention_mask.to(dtype=torch.float)
         extended_attention_mask = (1.0 - extended_attention_mask) * -10000.0
-        extended_ent_mask = extended_ent_mask.to(dtype=next(self.parameters()).dtype) # fp16 compatibility
+        extended_ent_mask = extended_ent_mask.to(dtype=torch.float)
         extended_ent_mask = (1.0 - extended_ent_mask) * -10000.0
 
         embedding_output = self.embeddings(input_ids, token_type_ids)
