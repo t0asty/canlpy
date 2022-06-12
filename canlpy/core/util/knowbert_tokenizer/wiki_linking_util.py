@@ -119,23 +119,22 @@ def enumerate_spans(sentence: List[str],
     allows filtering by length, regex matches, pos tags or any Spacy ``Token``
     attributes, for example.
 
-    Parameters
-    ----------
-    sentence : ``List[T]``, required.
-        The sentence to generate spans for. The type is generic, as this function
-        can be used with strings, or Spacy ``Tokens`` or other sequences.
-    offset : ``int``, optional (default = 0)
-        A numeric offset to add to all span start and end indices. This is helpful
-        if the sentence is part of a larger structure, such as a document, which
-        the indices need to respect.
-    max_span_width : ``int``, optional (default = None)
-        The maximum length of spans which should be included. Defaults to len(sentence).
-    min_span_width : ``int``, optional (default = 1)
-        The minimum length of spans which should be included. Defaults to 1.
-    filter_function : ``Callable[[List[T]], bool]``, optional (default = None)
-        A function mapping sequences of the passed type T to a boolean value.
-        If ``True``, the span is included in the returned spans from the
-        sentence, otherwise it is excluded..
+    Args:
+        sentence ``List[T]``, required.
+            The sentence to generate spans for. The type is generic, as this function
+            can be used with strings, or Spacy ``Tokens`` or other sequences.
+        offset ``int``, optional (default = 0)
+            A numeric offset to add to all span start and end indices. This is helpful
+            if the sentence is part of a larger structure, such as a document, which
+            the indices need to respect.
+        max_span_width ``int``, optional (default = None)
+            The maximum length of spans which should be included. Defaults to len(sentence).
+        min_span_width ``int``, optional (default = 1)
+            The minimum length of spans which should be included. Defaults to 1.
+        filter_function ``Callable[[List[T]], bool]``, optional (default = None)
+            A function mapping sequences of the passed type T to a boolean value.
+            If ``True``, the span is included in the returned spans from the
+            sentence, otherwise it is excluded..
     """
     max_span_width = max_span_width or len(sentence)
     filter_function = filter_function or (lambda x: True)
@@ -167,7 +166,8 @@ def span_filter_func(span: List[str]):
     return True
 
 class WikiCandidateMentionGenerator(MentionGenerator):
-
+    """ Generate spans for Wiki Entities
+    """
     defaults = {
         "candidates_file": "https://allennlp.s3-us-west-2.amazonaws.com/knowbert/wiki_entity_linking/prob_yago_crosswikis_wikipedia_p_e_m.txt",
         "wiki_file": "https://allennlp.s3-us-west-2.amazonaws.com/knowbert/wiki_entity_linking/wiki_name_id_map.txt",
@@ -273,7 +273,8 @@ class WikiCandidateMentionGenerator(MentionGenerator):
 
 
     def get_mentions_with_gold(self, text: str, gold_spans, gold_entities, whitespace_tokenize=True, keep_gold_only: bool = False):
-
+        """ get mention spans of gold entities in text 
+        """
         gold_spans_to_entities = {tuple(k):v for k,v in zip(gold_spans, gold_entities)}
 
         if whitespace_tokenize:
@@ -316,7 +317,6 @@ class WikiCandidateMentionGenerator(MentionGenerator):
             "tokenized_text": tokens,
             "candidate_spans": spans,
             "candidate_entities": entities,
-            # TODO Change to priors
             "candidate_entity_prior": priors,
             "gold_entities": gold_entities
         }
@@ -325,8 +325,10 @@ class WikiCandidateMentionGenerator(MentionGenerator):
     def _process(self, span: Union[List[str], str], lower=False) -> List[Tuple[str, str, float]]:
         """
         Look up spans in the candidate dictionary, including looking for
-        a title format version of the same string. Returns a list of
-        (entity_id, entity_candidate, p(entity_candidate | mention string)) pairs.
+        a title format version of the same string. 
+        
+        Returns: 
+            a list of (entity_id, entity_candidate, p(entity_candidate | mention string)) pairs.
         """
         if self.random_candidates:
             random_key = random.choice(self.p_e_m_keys_for_sampling)
