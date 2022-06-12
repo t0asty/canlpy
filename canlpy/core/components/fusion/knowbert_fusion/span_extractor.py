@@ -82,6 +82,7 @@ class SelfAttentiveSpanExtractor(SpanExtractor):
     """
     def __init__(self,
                  input_dim: int) -> None:
+        """"""
         super().__init__()
         self._input_dim = input_dim
         self._global_attention = torch.nn.Linear(input_dim, 1)

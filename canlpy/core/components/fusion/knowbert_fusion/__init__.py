@@ -1,1 +1,0 @@
-from .soldered_kg import SolderedKG
