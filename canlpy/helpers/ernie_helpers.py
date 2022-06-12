@@ -16,7 +16,16 @@ QID_TO_EID = "../kg_embed/entity2id.txt"
 EID_TO_VEC = "../kg_embed/entity2vec.vec"
 
 def create_model_mapping_ERNIE(model_old)->Dict[str,str]:
-    '''Returns a dictionnary mapping the original ERNIE model weights to custom ERNIE model weights'''
+    """
+    Returns a dictionnary mapping the original ERNIE model weights to custom ERNIE model weights
+
+    Args:
+       model_old: the old model's state dict
+
+    Returns:
+        model_mapping: a dictionnary mapping the original ERNIE model weights to custom ERNIE model weights
+
+    """
     model_mapping = dict()
     for old_name, param in model_old.named_parameters():
         match = re.search(r'\d+', old_name)
@@ -54,11 +63,13 @@ def create_model_mapping_ERNIE(model_old)->Dict[str,str]:
 
     return model_mapping
 
-def get_ents(text:str,name_to_QID:Dict[str,str],keep_proba:float = 0.3)->List[Tuple[str,int,int,float]]:
-    '''Returns a list of [entity_QID,character_idx_start,character_idx_end,entity_score] for each entity detect in the text
+def get_ents(text:str,name_to_QID:Dict[str,str], keep_proba:float = 0.3)->List[Tuple[str,int,int,float]]:
+    """
+    Returns a list of [entity_QID,character_idx_start,character_idx_end,entity_score] for each entity detect in the text
     Args:
         text: string, the text to extract entities from
-        name_to_QID: a dictionary mapping entity names to their QID'''
+        name_to_QID: a dictionary mapping entity names to their QID
+    """
     annotations = tagme.annotate(text)
     entities = []
     # Keep annotations with a score higher than 0.3
@@ -69,7 +80,11 @@ def get_ents(text:str,name_to_QID:Dict[str,str],keep_proba:float = 0.3)->List[Tu
     return entities
 
 def load_name_to_QID(filename:str)->Dict[str,str]:
-    '''Loads the dictionnary mapping entity names to their QID'''
+    """
+    Loads the dictionnary mapping entity names to their QID
+    Args:
+        filename: the path to the file containing the dictionnary
+    """
     name_to_QID = {}
     with open(filename,'r') as f:
         for line in f:
@@ -79,7 +94,12 @@ def load_name_to_QID(filename:str)->Dict[str,str]:
     return name_to_QID
 
 def load_QID_to_eid(filename:str)->Dict[str,int]:
-    '''Loads the dictionnary mapping entity QID to their eid (idx in an embedding vector)'''
+    """
+    Loads the dictionnary mapping entity QID to their eid (idx in an embedding vector)
+
+     Args:
+        filename: the path to the file containing the dictionnary
+    """
     QID_to_eid = {}
     with open(filename,'r') as f:
         f.readline()
@@ -89,7 +109,12 @@ def load_QID_to_eid(filename:str)->Dict[str,int]:
     return QID_to_eid
 
 def load_eid_to_vec(filename:str)->FloatTensor:
-    '''Loads the pytorch embedding mapping entity idx to their pre-trained vector representation'''
+    """
+    Loads the pytorch embedding mapping entity idx to their pre-trained vector representation
+
+    Args:
+        filename: the path to the file containing the dictionnary
+    """
     vecs = []
     vecs.append([0]*100)
     with open(filename, 'r') as fin:
@@ -101,13 +126,15 @@ def load_eid_to_vec(filename:str)->FloatTensor:
     return embed
 
 def concatenate_tokens_entities(tokens_a:List[str],tokens_b:List[str],entities_a:List[str],entities_b:List[str]) -> Tuple[List[str],List[str],List[int],List[int]]:
-    '''Returns the merged tokens and entities as well as a list representing their segments_ids and the input mask
-        Args:
-            tokens_a: a list of tokens
-            tokens_b: a list of tokens
-            entities_a: a list of entities QID 
-            entities_b: a list of entities QID 
-    '''
+    """
+    Returns the merged tokens and entities as well as a list representing their segments_ids and the input mask
+
+    Args:
+        tokens_a: a list of tokens
+        tokens_b: a list of tokens
+        entities_a: a list of entities QID 
+        entities_b: a list of entities QID 
+    """
     tokens =  ["[CLS]"] + tokens_a + ["[SEP]"] + tokens_b + ["[SEP]"]
     segments_ids = [0]*(len(tokens_a)+2) + [1]*(len(tokens_b)+1)
     #UNK for CLS and SEP 
@@ -116,12 +143,14 @@ def concatenate_tokens_entities(tokens_a:List[str],tokens_b:List[str],entities_a
     return tokens,entities,segments_ids,input_mask
 
 def get_entities_embeddings_and_mask(entities:List[str],QID_to_eid:Dict[str,int], eid_to_embeddings: Embedding,device:str)->Tuple[Tensor,Tensor]:
-    '''Returns the merged tokens and entities as well as a list representing their segments_ids and the input mask
-        Args:
-            entities: a list of tokens
-            QID_to_eid: a list of tokens
-            eid_to_embeddings: a list of entities QID 
-    '''
+    """
+    Returns the merged tokens and entities as well as a list representing their segments_ids and the input mask
+    Args:
+        entities: a list of tokens
+        QID_to_eid: a list of tokens
+        eid_to_embeddings: a list of entities QID
+
+    """
     #Convert QID to entity indices
     indexed_entities = []
     entities_mask = []
@@ -141,7 +170,25 @@ def get_entities_embeddings_and_mask(entities:List[str],QID_to_eid:Dict[str,int]
     return entities_tensor,entities_mask
 
 def process_sentences(text_a:str,text_b:str,masked_indices:List[int],name_to_QID:Dict[str,str],QID_to_eid:Dict[str,int],eid_to_embeddings:Embedding,tokenizer:BertTokenizer,device:str) -> Tuple[Tensor,Tensor,Tensor,Tensor]:
+    """
+    Returns the ERNIE model input for the sentence
+    Args:
+        text_a: the first sentence
+        text_b: the second sentence
+        masked_indices: the indices to mask in the sentences
+        name_to_QID: a dictionnary mapping entity name to the QID (wikipedia id)
+        QID_to_eid: a dictionnary mapping QID to embedding indices
+        eid_to_embeddings: the nn.Embedding containing the entity embeddings
+        tokenizer: the bert tokenizer to use on the sentences
+        device: the PyTorch device to place the resulting tensor on
 
+    Returns:
+        tokens_tensor: a torch.LongTensor containing the tokens ids
+        ents_tensor: a torch.FloatTensor containing the entity embeddings
+        ent_mask: a tensor of [0,1] containing the mask on the entities
+        segments_tensors: a tensor of [0,1] indicating to which sentence the corresponding tokens belongs to
+        
+    """
     # Tokenized input
     #entities_b:[['Q191037', 0, 10, 0.8473327159881592], ['Q2629392', 17, 26, 0.48991236090660095]]
     entities_a = get_ents(text_a,name_to_QID)

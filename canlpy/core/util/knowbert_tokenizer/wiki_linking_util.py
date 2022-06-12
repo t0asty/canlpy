@@ -1,3 +1,6 @@
+#This file is adapted from the AllenNLP library at https://github.com/allenai/allennlp
+#Copyright by the AllenNLP authors.
+
 from typing import List, Tuple, Union,Callable
 import json
 import random
@@ -17,9 +20,11 @@ def prior_entity_candidates(candidates_file: str,
                             max_mentions = None):
     """
     Args:
-    cand_ent_num: how many candidate entities to keep for each mention
-    allowed_entities_set: restrict the candidate entities to only this set. for example
-    the most frequent 1M entities. First this restiction applies and then the cand_ent_num.
+        candidates_file: a file that contains all the entity candidates
+        max_candidates: how many candidate entities to keep for each mention
+        allowed_entities_set: restrict the candidate entities to only this set. for example
+        the most frequent 1M entities. First this restiction applies and then the 'max_mentions'.
+    
     """
     wall_start = time.time()
     p_e_m = {}  # for each mention we have a list of tuples (ent_id, score)
@@ -211,7 +216,10 @@ class WikiCandidateMentionGenerator(MentionGenerator):
 
     def get_mentions_raw_text(self, text: str, whitespace_tokenize=False):
         """
-        returns:
+        Args:
+            text: the text to get the mentions from
+            whitespace_tokenize: whether to whitespace tokenize the text
+        Returns:
             {'tokenized_text': List[str],
              'candidate_spans': List[List[int]] list of (start, end) indices for candidates,
                     where span is tokenized_text[start:(end + 1)]
@@ -232,7 +240,7 @@ class WikiCandidateMentionGenerator(MentionGenerator):
         spans_to_candidates = {}
 
         for span in all_spans:
-            candidate_entities = self.process(tokens[span[0]:span[1] + 1])
+            candidate_entities = self._process(tokens[span[0]:span[1] + 1])
             if candidate_entities:
                 # Only keep spans which we have candidates for.
                 spans_to_candidates[(span[0], span[1])] = candidate_entities
@@ -285,7 +293,7 @@ class WikiCandidateMentionGenerator(MentionGenerator):
         gold_entities = []
         priors = []
         for span in spans_with_gold:
-            candidate_entities = self.process(tokens[span[0]:span[1] + 1])
+            candidate_entities = self._process(tokens[span[0]:span[1] + 1])
 
             gold_entity = gold_spans_to_entities.get(span, "@@NULL@@")
             # Only keep spans which we have candidates for.
@@ -314,7 +322,7 @@ class WikiCandidateMentionGenerator(MentionGenerator):
         }
 
 
-    def process(self, span: Union[List[str], str], lower=False) -> List[Tuple[str, str, float]]:
+    def _process(self, span: Union[List[str], str], lower=False) -> List[Tuple[str, str, float]]:
         """
         Look up spans in the candidate dictionary, including looking for
         a title format version of the same string. Returns a list of
