@@ -24,7 +24,7 @@ setup(
     author_email="antoine.masanet@epfl.ch, julian.schnitzler@epfl.ch",
     license="Apache License 2.0",
     keywords="natural-language-processing nlp",
-    packages=find_packages(exclude=["examples", "experiments"]),
+    packages=find_packages(exclude=["examples", "experiments", "docs", "doc_pages"]),
     install_requires=requirements,
     python_requires=">=3.6.9",
     # $ pip install -e .[dev,test]
