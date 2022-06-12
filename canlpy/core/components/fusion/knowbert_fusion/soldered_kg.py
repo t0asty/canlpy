@@ -1,3 +1,6 @@
+# This file is adapted from the AllenAI library at https://github.com/allenai/kb
+# Copyright by the AllenAI authors.
+
 from typing import Dict, List
 import math
 import numpy as np

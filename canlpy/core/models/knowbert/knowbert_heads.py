@@ -1,3 +1,5 @@
+# This file is adapted from the AllenAI library at https://github.com/allenai/kb
+# Copyright by the AllenAI authors.
 
 import torch
 import torch.nn as nn

@@ -1,5 +1,5 @@
-#This file is adapted from the AllenNLP library at https://github.com/allenai/allennlp
-#Copyright by the AllenNLP authors.
+# This file is adapted from the AllenAI library at https://github.com/allenai/kb
+# Copyright by the AllenAI authors.
 
 from typing import Dict, List
 import copy

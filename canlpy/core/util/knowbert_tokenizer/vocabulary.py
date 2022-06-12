@@ -1,5 +1,5 @@
-#This file is adapted from the AllenNLP library at https://github.com/allenai/allennlp
-#Copyright by the AllenNLP authors.
+# This file is adapted from the AllenAI library at https://github.com/allenai/kb
+# Copyright by the AllenAI authors.
 
 """
 A Vocabulary maps strings to integers, allowing for strings to be mapped to an
