@@ -872,7 +872,7 @@ class SolderedKG(Fusion):
             candidate_segment_ids: the segment ids of the candidate entities
             
         Returns:
-            a dictionnary: 
+            a dictionary: 
             {'entity_attention_probs': entity_attention_probs,
             'contextual_embeddings': new_contextual_embeddings,
             'linking_scores': linker_output['linking_scores']}
