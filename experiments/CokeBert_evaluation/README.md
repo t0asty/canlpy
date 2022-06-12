@@ -8,7 +8,14 @@ tar -xvzf cokebert.tar.gz
 ```
 and copy the content of the folder into `canlpy/canlpy/pretrained_models/cokebert` 
 
-From the same file, copy the `load_data_n` folder into `./data/`
+From the same file, copy the `load_data_n` folder into `canlpy/canlpy/knowledge/cokebert/`
+
+You can find the datasets for fine-tuning and the knowledge graph representation used by the authors of the paper, download them into this folder from [here](https://drive.google.com/open?id=1HlWw7Q6-dFSm9jNSCh4VaBf1PlGqt9im) and run 
+
+```shell
+tar -xvzf data.tar.gz
+```
+to extract it. Move the folder `kg_embed` into `canlpy/canlpy/knowledge/cokebert/`, all other folders stay in `data`. 
 
 You can find the datasets for fine-tuning and the knowledge graph representation used by the authors of the ERNIE paper, download them into this folder from [here](https://drive.google.com/open?id=1HlWw7Q6-dFSm9jNSCh4VaBf1PlGqt9im) and run 
 
