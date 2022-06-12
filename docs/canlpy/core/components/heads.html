@@ -254,7 +254,7 @@ import torch.nn.functional as F
 
 class Model(nn.Module):
     def __init__(self):
-        super(Model, self).__init__()
+        super().__init__()
         self.conv1 = nn.Conv2d(1, 20, 5)
         self.conv2 = nn.Conv2d(20, 20, 5)
 
@@ -265,6 +265,13 @@ class Model(nn.Module):
 
 <p>Submodules assigned in this way will be registered, and will have their
 parameters converted too when you call <code><a href="#BertLMPredictionHead.to">to</a></code>, etc.</p>
+
+<div class="pdoc-alert pdoc-alert-note">
+
+<p>As per the example above, an <code><a href="#BertLMPredictionHead.__init__">__init__()</a></code> call to the parent class
+must be made before assignment on the child.</p>
+
+</div>
 
 <p>:ivar training: Boolean represents whether this module is in training or
                 evaluation mode.
@@ -343,16 +350,25 @@ registered hooks while the latter silently ignores them.</p>
                 <dd id="BertLMPredictionHead.register_buffer" class="function">register_buffer</dd>
                 <dd id="BertLMPredictionHead.register_parameter" class="function">register_parameter</dd>
                 <dd id="BertLMPredictionHead.add_module" class="function">add_module</dd>
+                <dd id="BertLMPredictionHead.register_module" class="function">register_module</dd>
+                <dd id="BertLMPredictionHead.get_submodule" class="function">get_submodule</dd>
+                <dd id="BertLMPredictionHead.get_parameter" class="function">get_parameter</dd>
+                <dd id="BertLMPredictionHead.get_buffer" class="function">get_buffer</dd>
+                <dd id="BertLMPredictionHead.get_extra_state" class="function">get_extra_state</dd>
+                <dd id="BertLMPredictionHead.set_extra_state" class="function">set_extra_state</dd>
                 <dd id="BertLMPredictionHead.apply" class="function">apply</dd>
                 <dd id="BertLMPredictionHead.cuda" class="function">cuda</dd>
+                <dd id="BertLMPredictionHead.xpu" class="function">xpu</dd>
                 <dd id="BertLMPredictionHead.cpu" class="function">cpu</dd>
                 <dd id="BertLMPredictionHead.type" class="function">type</dd>
                 <dd id="BertLMPredictionHead.float" class="function">float</dd>
                 <dd id="BertLMPredictionHead.double" class="function">double</dd>
                 <dd id="BertLMPredictionHead.half" class="function">half</dd>
                 <dd id="BertLMPredictionHead.bfloat16" class="function">bfloat16</dd>
+                <dd id="BertLMPredictionHead.to_empty" class="function">to_empty</dd>
                 <dd id="BertLMPredictionHead.to" class="function">to</dd>
                 <dd id="BertLMPredictionHead.register_backward_hook" class="function">register_backward_hook</dd>
+                <dd id="BertLMPredictionHead.register_full_backward_hook" class="function">register_full_backward_hook</dd>
                 <dd id="BertLMPredictionHead.register_forward_pre_hook" class="function">register_forward_pre_hook</dd>
                 <dd id="BertLMPredictionHead.register_forward_hook" class="function">register_forward_hook</dd>
                 <dd id="BertLMPredictionHead.T_destination" class="variable">T_destination</dd>
@@ -411,7 +427,7 @@ import torch.nn.functional as F
 
 class Model(nn.Module):
     def __init__(self):
-        super(Model, self).__init__()
+        super().__init__()
         self.conv1 = nn.Conv2d(1, 20, 5)
         self.conv2 = nn.Conv2d(20, 20, 5)
 
@@ -422,6 +438,13 @@ class Model(nn.Module):
 
 <p>Submodules assigned in this way will be registered, and will have their
 parameters converted too when you call <code><a href="#BertOnlyMLMHead.to">to</a></code>, etc.</p>
+
+<div class="pdoc-alert pdoc-alert-note">
+
+<p>As per the example above, an <code><a href="#BertOnlyMLMHead.__init__">__init__()</a></code> call to the parent class
+must be made before assignment on the child.</p>
+
+</div>
 
 <p>:ivar training: Boolean represents whether this module is in training or
                 evaluation mode.
@@ -491,16 +514,25 @@ registered hooks while the latter silently ignores them.</p>
                 <dd id="BertOnlyMLMHead.register_buffer" class="function">register_buffer</dd>
                 <dd id="BertOnlyMLMHead.register_parameter" class="function">register_parameter</dd>
                 <dd id="BertOnlyMLMHead.add_module" class="function">add_module</dd>
+                <dd id="BertOnlyMLMHead.register_module" class="function">register_module</dd>
+                <dd id="BertOnlyMLMHead.get_submodule" class="function">get_submodule</dd>
+                <dd id="BertOnlyMLMHead.get_parameter" class="function">get_parameter</dd>
+                <dd id="BertOnlyMLMHead.get_buffer" class="function">get_buffer</dd>
+                <dd id="BertOnlyMLMHead.get_extra_state" class="function">get_extra_state</dd>
+                <dd id="BertOnlyMLMHead.set_extra_state" class="function">set_extra_state</dd>
                 <dd id="BertOnlyMLMHead.apply" class="function">apply</dd>
                 <dd id="BertOnlyMLMHead.cuda" class="function">cuda</dd>
+                <dd id="BertOnlyMLMHead.xpu" class="function">xpu</dd>
                 <dd id="BertOnlyMLMHead.cpu" class="function">cpu</dd>
                 <dd id="BertOnlyMLMHead.type" class="function">type</dd>
                 <dd id="BertOnlyMLMHead.float" class="function">float</dd>
                 <dd id="BertOnlyMLMHead.double" class="function">double</dd>
                 <dd id="BertOnlyMLMHead.half" class="function">half</dd>
                 <dd id="BertOnlyMLMHead.bfloat16" class="function">bfloat16</dd>
+                <dd id="BertOnlyMLMHead.to_empty" class="function">to_empty</dd>
                 <dd id="BertOnlyMLMHead.to" class="function">to</dd>
                 <dd id="BertOnlyMLMHead.register_backward_hook" class="function">register_backward_hook</dd>
+                <dd id="BertOnlyMLMHead.register_full_backward_hook" class="function">register_full_backward_hook</dd>
                 <dd id="BertOnlyMLMHead.register_forward_pre_hook" class="function">register_forward_pre_hook</dd>
                 <dd id="BertOnlyMLMHead.register_forward_hook" class="function">register_forward_hook</dd>
                 <dd id="BertOnlyMLMHead.T_destination" class="variable">T_destination</dd>
@@ -564,7 +596,7 @@ import torch.nn.functional as F
 
 class Model(nn.Module):
     def __init__(self):
-        super(Model, self).__init__()
+        super().__init__()
         self.conv1 = nn.Conv2d(1, 20, 5)
         self.conv2 = nn.Conv2d(20, 20, 5)
 
@@ -575,6 +607,13 @@ class Model(nn.Module):
 
 <p>Submodules assigned in this way will be registered, and will have their
 parameters converted too when you call <code><a href="#BertPredictionHeadTransform.to">to</a></code>, etc.</p>
+
+<div class="pdoc-alert pdoc-alert-note">
+
+<p>As per the example above, an <code><a href="#BertPredictionHeadTransform.__init__">__init__()</a></code> call to the parent class
+must be made before assignment on the child.</p>
+
+</div>
 
 <p>:ivar training: Boolean represents whether this module is in training or
                 evaluation mode.
@@ -648,16 +687,25 @@ registered hooks while the latter silently ignores them.</p>
                 <dd id="BertPredictionHeadTransform.register_buffer" class="function">register_buffer</dd>
                 <dd id="BertPredictionHeadTransform.register_parameter" class="function">register_parameter</dd>
                 <dd id="BertPredictionHeadTransform.add_module" class="function">add_module</dd>
+                <dd id="BertPredictionHeadTransform.register_module" class="function">register_module</dd>
+                <dd id="BertPredictionHeadTransform.get_submodule" class="function">get_submodule</dd>
+                <dd id="BertPredictionHeadTransform.get_parameter" class="function">get_parameter</dd>
+                <dd id="BertPredictionHeadTransform.get_buffer" class="function">get_buffer</dd>
+                <dd id="BertPredictionHeadTransform.get_extra_state" class="function">get_extra_state</dd>
+                <dd id="BertPredictionHeadTransform.set_extra_state" class="function">set_extra_state</dd>
                 <dd id="BertPredictionHeadTransform.apply" class="function">apply</dd>
                 <dd id="BertPredictionHeadTransform.cuda" class="function">cuda</dd>
+                <dd id="BertPredictionHeadTransform.xpu" class="function">xpu</dd>
                 <dd id="BertPredictionHeadTransform.cpu" class="function">cpu</dd>
                 <dd id="BertPredictionHeadTransform.type" class="function">type</dd>
                 <dd id="BertPredictionHeadTransform.float" class="function">float</dd>
                 <dd id="BertPredictionHeadTransform.double" class="function">double</dd>
                 <dd id="BertPredictionHeadTransform.half" class="function">half</dd>
                 <dd id="BertPredictionHeadTransform.bfloat16" class="function">bfloat16</dd>
+                <dd id="BertPredictionHeadTransform.to_empty" class="function">to_empty</dd>
                 <dd id="BertPredictionHeadTransform.to" class="function">to</dd>
                 <dd id="BertPredictionHeadTransform.register_backward_hook" class="function">register_backward_hook</dd>
+                <dd id="BertPredictionHeadTransform.register_full_backward_hook" class="function">register_full_backward_hook</dd>
                 <dd id="BertPredictionHeadTransform.register_forward_pre_hook" class="function">register_forward_pre_hook</dd>
                 <dd id="BertPredictionHeadTransform.register_forward_hook" class="function">register_forward_hook</dd>
                 <dd id="BertPredictionHeadTransform.T_destination" class="variable">T_destination</dd>
@@ -716,7 +764,7 @@ import torch.nn.functional as F
 
 class Model(nn.Module):
     def __init__(self):
-        super(Model, self).__init__()
+        super().__init__()
         self.conv1 = nn.Conv2d(1, 20, 5)
         self.conv2 = nn.Conv2d(20, 20, 5)
 
@@ -727,6 +775,13 @@ class Model(nn.Module):
 
 <p>Submodules assigned in this way will be registered, and will have their
 parameters converted too when you call <code><a href="#BertOnlyNSPHead.to">to</a></code>, etc.</p>
+
+<div class="pdoc-alert pdoc-alert-note">
+
+<p>As per the example above, an <code><a href="#BertOnlyNSPHead.__init__">__init__()</a></code> call to the parent class
+must be made before assignment on the child.</p>
+
+</div>
 
 <p>:ivar training: Boolean represents whether this module is in training or
                 evaluation mode.
@@ -796,16 +851,25 @@ registered hooks while the latter silently ignores them.</p>
                 <dd id="BertOnlyNSPHead.register_buffer" class="function">register_buffer</dd>
                 <dd id="BertOnlyNSPHead.register_parameter" class="function">register_parameter</dd>
                 <dd id="BertOnlyNSPHead.add_module" class="function">add_module</dd>
+                <dd id="BertOnlyNSPHead.register_module" class="function">register_module</dd>
+                <dd id="BertOnlyNSPHead.get_submodule" class="function">get_submodule</dd>
+                <dd id="BertOnlyNSPHead.get_parameter" class="function">get_parameter</dd>
+                <dd id="BertOnlyNSPHead.get_buffer" class="function">get_buffer</dd>
+                <dd id="BertOnlyNSPHead.get_extra_state" class="function">get_extra_state</dd>
+                <dd id="BertOnlyNSPHead.set_extra_state" class="function">set_extra_state</dd>
                 <dd id="BertOnlyNSPHead.apply" class="function">apply</dd>
                 <dd id="BertOnlyNSPHead.cuda" class="function">cuda</dd>
+                <dd id="BertOnlyNSPHead.xpu" class="function">xpu</dd>
                 <dd id="BertOnlyNSPHead.cpu" class="function">cpu</dd>
                 <dd id="BertOnlyNSPHead.type" class="function">type</dd>
                 <dd id="BertOnlyNSPHead.float" class="function">float</dd>
                 <dd id="BertOnlyNSPHead.double" class="function">double</dd>
                 <dd id="BertOnlyNSPHead.half" class="function">half</dd>
                 <dd id="BertOnlyNSPHead.bfloat16" class="function">bfloat16</dd>
+                <dd id="BertOnlyNSPHead.to_empty" class="function">to_empty</dd>
                 <dd id="BertOnlyNSPHead.to" class="function">to</dd>
                 <dd id="BertOnlyNSPHead.register_backward_hook" class="function">register_backward_hook</dd>
+                <dd id="BertOnlyNSPHead.register_full_backward_hook" class="function">register_full_backward_hook</dd>
                 <dd id="BertOnlyNSPHead.register_forward_pre_hook" class="function">register_forward_pre_hook</dd>
                 <dd id="BertOnlyNSPHead.register_forward_hook" class="function">register_forward_hook</dd>
                 <dd id="BertOnlyNSPHead.T_destination" class="variable">T_destination</dd>
@@ -871,7 +935,7 @@ import torch.nn.functional as F
 
 class Model(nn.Module):
     def __init__(self):
-        super(Model, self).__init__()
+        super().__init__()
         self.conv1 = nn.Conv2d(1, 20, 5)
         self.conv2 = nn.Conv2d(20, 20, 5)
 
@@ -882,6 +946,13 @@ class Model(nn.Module):
 
 <p>Submodules assigned in this way will be registered, and will have their
 parameters converted too when you call <code><a href="#ErnieEntPredictionHead.to">to</a></code>, etc.</p>
+
+<div class="pdoc-alert pdoc-alert-note">
+
+<p>As per the example above, an <code><a href="#ErnieEntPredictionHead.__init__">__init__()</a></code> call to the parent class
+must be made before assignment on the child.</p>
+
+</div>
 
 <p>:ivar training: Boolean represents whether this module is in training or
                 evaluation mode.
@@ -958,16 +1029,25 @@ registered hooks while the latter silently ignores them.</p>
                 <dd id="ErnieEntPredictionHead.register_buffer" class="function">register_buffer</dd>
                 <dd id="ErnieEntPredictionHead.register_parameter" class="function">register_parameter</dd>
                 <dd id="ErnieEntPredictionHead.add_module" class="function">add_module</dd>
+                <dd id="ErnieEntPredictionHead.register_module" class="function">register_module</dd>
+                <dd id="ErnieEntPredictionHead.get_submodule" class="function">get_submodule</dd>
+                <dd id="ErnieEntPredictionHead.get_parameter" class="function">get_parameter</dd>
+                <dd id="ErnieEntPredictionHead.get_buffer" class="function">get_buffer</dd>
+                <dd id="ErnieEntPredictionHead.get_extra_state" class="function">get_extra_state</dd>
+                <dd id="ErnieEntPredictionHead.set_extra_state" class="function">set_extra_state</dd>
                 <dd id="ErnieEntPredictionHead.apply" class="function">apply</dd>
                 <dd id="ErnieEntPredictionHead.cuda" class="function">cuda</dd>
+                <dd id="ErnieEntPredictionHead.xpu" class="function">xpu</dd>
                 <dd id="ErnieEntPredictionHead.cpu" class="function">cpu</dd>
                 <dd id="ErnieEntPredictionHead.type" class="function">type</dd>
                 <dd id="ErnieEntPredictionHead.float" class="function">float</dd>
                 <dd id="ErnieEntPredictionHead.double" class="function">double</dd>
                 <dd id="ErnieEntPredictionHead.half" class="function">half</dd>
                 <dd id="ErnieEntPredictionHead.bfloat16" class="function">bfloat16</dd>
+                <dd id="ErnieEntPredictionHead.to_empty" class="function">to_empty</dd>
                 <dd id="ErnieEntPredictionHead.to" class="function">to</dd>
                 <dd id="ErnieEntPredictionHead.register_backward_hook" class="function">register_backward_hook</dd>
+                <dd id="ErnieEntPredictionHead.register_full_backward_hook" class="function">register_full_backward_hook</dd>
                 <dd id="ErnieEntPredictionHead.register_forward_pre_hook" class="function">register_forward_pre_hook</dd>
                 <dd id="ErnieEntPredictionHead.register_forward_hook" class="function">register_forward_hook</dd>
                 <dd id="ErnieEntPredictionHead.T_destination" class="variable">T_destination</dd>
@@ -1030,7 +1110,7 @@ import torch.nn.functional as F
 
 class Model(nn.Module):
     def __init__(self):
-        super(Model, self).__init__()
+        super().__init__()
         self.conv1 = nn.Conv2d(1, 20, 5)
         self.conv2 = nn.Conv2d(20, 20, 5)
 
@@ -1041,6 +1121,13 @@ class Model(nn.Module):
 
 <p>Submodules assigned in this way will be registered, and will have their
 parameters converted too when you call <code><a href="#ErniePreTrainingHeads.to">to</a></code>, etc.</p>
+
+<div class="pdoc-alert pdoc-alert-note">
+
+<p>As per the example above, an <code><a href="#ErniePreTrainingHeads.__init__">__init__()</a></code> call to the parent class
+must be made before assignment on the child.</p>
+
+</div>
 
 <p>:ivar training: Boolean represents whether this module is in training or
                 evaluation mode.
@@ -1114,16 +1201,25 @@ registered hooks while the latter silently ignores them.</p>
                 <dd id="ErniePreTrainingHeads.register_buffer" class="function">register_buffer</dd>
                 <dd id="ErniePreTrainingHeads.register_parameter" class="function">register_parameter</dd>
                 <dd id="ErniePreTrainingHeads.add_module" class="function">add_module</dd>
+                <dd id="ErniePreTrainingHeads.register_module" class="function">register_module</dd>
+                <dd id="ErniePreTrainingHeads.get_submodule" class="function">get_submodule</dd>
+                <dd id="ErniePreTrainingHeads.get_parameter" class="function">get_parameter</dd>
+                <dd id="ErniePreTrainingHeads.get_buffer" class="function">get_buffer</dd>
+                <dd id="ErniePreTrainingHeads.get_extra_state" class="function">get_extra_state</dd>
+                <dd id="ErniePreTrainingHeads.set_extra_state" class="function">set_extra_state</dd>
                 <dd id="ErniePreTrainingHeads.apply" class="function">apply</dd>
                 <dd id="ErniePreTrainingHeads.cuda" class="function">cuda</dd>
+                <dd id="ErniePreTrainingHeads.xpu" class="function">xpu</dd>
                 <dd id="ErniePreTrainingHeads.cpu" class="function">cpu</dd>
                 <dd id="ErniePreTrainingHeads.type" class="function">type</dd>
                 <dd id="ErniePreTrainingHeads.float" class="function">float</dd>
                 <dd id="ErniePreTrainingHeads.double" class="function">double</dd>
                 <dd id="ErniePreTrainingHeads.half" class="function">half</dd>
                 <dd id="ErniePreTrainingHeads.bfloat16" class="function">bfloat16</dd>
+                <dd id="ErniePreTrainingHeads.to_empty" class="function">to_empty</dd>
                 <dd id="ErniePreTrainingHeads.to" class="function">to</dd>
                 <dd id="ErniePreTrainingHeads.register_backward_hook" class="function">register_backward_hook</dd>
+                <dd id="ErniePreTrainingHeads.register_full_backward_hook" class="function">register_full_backward_hook</dd>
                 <dd id="ErniePreTrainingHeads.register_forward_pre_hook" class="function">register_forward_pre_hook</dd>
                 <dd id="ErniePreTrainingHeads.register_forward_hook" class="function">register_forward_hook</dd>
                 <dd id="ErniePreTrainingHeads.T_destination" class="variable">T_destination</dd>

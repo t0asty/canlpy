@@ -129,7 +129,7 @@ import torch.nn.functional as F
 
 class Model(nn.Module):
     def __init__(self):
-        super(Model, self).__init__()
+        super().__init__()
         self.conv1 = nn.Conv2d(1, 20, 5)
         self.conv2 = nn.Conv2d(20, 20, 5)
 
@@ -140,6 +140,13 @@ class Model(nn.Module):
 
 <p>Submodules assigned in this way will be registered, and will have their
 parameters converted too when you call <code><a href="#Fusion.to">to</a></code>, etc.</p>
+
+<div class="pdoc-alert pdoc-alert-note">
+
+<p>As per the example above, an <code><a href="#Fusion.__init__">__init__()</a></code> call to the parent class
+must be made before assignment on the child.</p>
+
+</div>
 
 <p>:ivar training: Boolean represents whether this module is in training or
                 evaluation mode.
@@ -223,16 +230,25 @@ parameters converted too when you call <code><a href="#Fusion.to">to</a></code>,
                 <dd id="Fusion.register_buffer" class="function">register_buffer</dd>
                 <dd id="Fusion.register_parameter" class="function">register_parameter</dd>
                 <dd id="Fusion.add_module" class="function">add_module</dd>
+                <dd id="Fusion.register_module" class="function">register_module</dd>
+                <dd id="Fusion.get_submodule" class="function">get_submodule</dd>
+                <dd id="Fusion.get_parameter" class="function">get_parameter</dd>
+                <dd id="Fusion.get_buffer" class="function">get_buffer</dd>
+                <dd id="Fusion.get_extra_state" class="function">get_extra_state</dd>
+                <dd id="Fusion.set_extra_state" class="function">set_extra_state</dd>
                 <dd id="Fusion.apply" class="function">apply</dd>
                 <dd id="Fusion.cuda" class="function">cuda</dd>
+                <dd id="Fusion.xpu" class="function">xpu</dd>
                 <dd id="Fusion.cpu" class="function">cpu</dd>
                 <dd id="Fusion.type" class="function">type</dd>
                 <dd id="Fusion.float" class="function">float</dd>
                 <dd id="Fusion.double" class="function">double</dd>
                 <dd id="Fusion.half" class="function">half</dd>
                 <dd id="Fusion.bfloat16" class="function">bfloat16</dd>
+                <dd id="Fusion.to_empty" class="function">to_empty</dd>
                 <dd id="Fusion.to" class="function">to</dd>
                 <dd id="Fusion.register_backward_hook" class="function">register_backward_hook</dd>
+                <dd id="Fusion.register_full_backward_hook" class="function">register_full_backward_hook</dd>
                 <dd id="Fusion.register_forward_pre_hook" class="function">register_forward_pre_hook</dd>
                 <dd id="Fusion.register_forward_hook" class="function">register_forward_hook</dd>
                 <dd id="Fusion.T_destination" class="variable">T_destination</dd>
