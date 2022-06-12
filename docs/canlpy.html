@@ -21,6 +21,12 @@
             <input type="search" placeholder="Search..." role="searchbox" aria-label="search"
                    pattern=".+" required>
 
+        <h2>Contents</h2>
+        <ul>
+  <li><a href="#setup">Setup</a></li>
+  <li><a href="#quick-start-guide">Quick-start guide</a></li>
+</ul>
+
 
         <h2>Submodules</h2>
         <ul>
@@ -43,12 +49,71 @@
                     <h1 class="modulename">
 canlpy    </h1>
 
-                
+                        <div class="docstring"><p>This is canlpy, a python library for building and testing knowledge enhanced language models. </p>
+
+<h3 id="requirements">Requirements:</h3>
+
+<p>Pytorch <br />
+Python3 &gt;=3.6.9</p>
+
+<h2 id="setup">Setup</h2>
+
+<p>Run <code>pip install -e .</code> in the home directory to setup the project</p>
+
+<h2 id="quick-start-guide">Quick-start guide</h2>
+
+<h3 id="ernie">ERNIE</h3>
+
+<p>Download pre-trained knowledge embedding from <a href="https://drive.google.com/open?id=14VNvGMtYWxuqT-PWDa8sD0e7hO486i8Y">Google Drive</a>/<a href="https://cloud.tsinghua.edu.cn/f/229e8cccedc2419f987e/">Tsinghua Cloud</a> and extract it.</p>
+
+<div class="pdoc-code codehilite"><pre><span></span><code>tar -xvzf kg_embed.tar.gz
+</code></pre></div>
+
+<p>Store the content of kg_embed in canlpy/knowledge/ernie/</p>
+
+<p>Download pre-trained ERNIE from <a href="https://drive.google.com/uc?export=download&amp;id=1Hdp_iqsF3xjFcWSRvklC5ppvvd2C0qim">Google Drive</a> and extract it.</p>
+
+<div class="pdoc-code codehilite"><pre><span></span><code>tar -xvzf ernie_base.tar.gz
+</code></pre></div>
+
+<p>Store the content of ernie_base in pretrained_models/ernie/</p>
+
+<p>Add your TAGME token in a tokens.py file located in the canlpy/helpers folder <br />
+Token name is TAGME_TOKEN</p>
+
+<p>Once that is done, you can run <code>ernie.ipynb</code> from the examples/ folder. </p>
+
+<h3 id="cokebert">CokeBert</h3>
+
+<p>You can find the pretrained CokeBert model provided by the authors of the CokeBert paper, which is available from <a href="https://drive.google.com/file/d/1Ce7Nq7vJ83l4lOV9SiiN2Kq831z_phsV/view?usp=sharing">here</a>. 
+Then unzip the file, and copy the content of the <code>DKPLM_BERTbase_2layer</code> folder into <code>canlpy/canlpy/pretrained_models/cokebert</code> </p>
+
+<p>From the same file, copy the <code>load_data_n</code> folder into <code>canlpy/canlpy/knowledge/cokebert/</code></p>
+
+<p>You can find the datasets for the knowledge graph representation used by the authors of the ERNIE paper, download them into this folder from <a href="https://drive.google.com/open?id=1HlWw7Q6-dFSm9jNSCh4VaBf1PlGqt9im">here</a> and run </p>
+
+<div class="pdoc-code codehilite"><pre><span></span><code>tar -xvzf data.tar.gz
+</code></pre></div>
+
+<p>to extract it. </p>
+
+<p>Then copy <code>kg_embed</code> into <code>canlpy/canlpy/knowledge/cokebert/</code></p>
+
+<p>Add your TAGME token in a tokens.py file located in the canlpy/helpers folder <br />
+Token name is TAGME_TOKEN</p>
+
+<p>Once that is done, you can run <code>cokebert.ipynb</code> from the examples folder.</p>
+</div>
+
                         <input id="canlpy-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
 
                         <label class="view-source-button" for="canlpy-view-source"><span>View Source</span></label>
 
-                        <div class="pdoc-code codehilite"><pre><span></span><span id="L-1"><a href="#L-1"><span class="linenos">1</span></a><span class="n">__docformat__</span> <span class="o">=</span> <span class="s2">&quot;google&quot;</span>
+                        <div class="pdoc-code codehilite"><pre><span></span><span id="L-1"><a href="#L-1"><span class="linenos">1</span></a><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-2"><a href="#L-2"><span class="linenos">2</span></a><span class="sd">.. include:: ../doc_pages/getting_started.md</span>
+</span><span id="L-3"><a href="#L-3"><span class="linenos">3</span></a><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-4"><a href="#L-4"><span class="linenos">4</span></a>
+</span><span id="L-5"><a href="#L-5"><span class="linenos">5</span></a><span class="n">__docformat__</span> <span class="o">=</span> <span class="s2">&quot;google&quot;</span>
 </span></pre></div>
 
 
