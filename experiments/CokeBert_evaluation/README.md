@@ -1,8 +1,12 @@
 # CokeBert Experiments
 
 First, make sure that you have the pretrained CokeBert model in `canlpy/canlpy/pretrained_models/cokebert`.  
-If that is not the case, you find the pretrained CokeBert model provided by the authors of the CokeBert paper, which is available from [here](https://drive.google.com/file/d/1Ce7Nq7vJ83l4lOV9SiiN2Kq831z_phsV/view?usp=sharing). 
-Then unzip the file, and copy the content of the `DKPLM_BERTbase_2layer` folder into `canlpy/canlpy/pretrained_models/cokebert` 
+If that is not the case, you find the pretrained CokeBert model provided by the authors of the CokeBert paper, which is available from [here](https://drive.google.com/file/d/1poBynySbIosIYHaHfqnHKQEqoMmm1h5K/view?usp=sharing). 
+Then run
+```shell
+tar -xvzf cokebert.tar.gz
+```
+and copy the content of the folder into `canlpy/canlpy/pretrained_models/cokebert` 
 
 From the same file, copy the `load_data_n` folder into `./data/`
 
