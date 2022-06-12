@@ -3,8 +3,7 @@ from spacy.tokens import Doc
 
 def get_empty_candidates():
     """
-    The mention generators always return at least one candidate, but signal
-    it with this special candidate
+    Returns the values corresponding to an empty candidate
     """
     return {
         "candidate_spans": [[-1, -1]],
@@ -15,6 +14,9 @@ def get_empty_candidates():
 
 # from https://spacy.io/usage/linguistic-features#custom-tokenizer-example
 class WhitespaceTokenizer(object):
+    """
+    Simple whitespace tokenizer useable by spacy
+    """
     def __init__(self, vocab):
         self.vocab = vocab
 

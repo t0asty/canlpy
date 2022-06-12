@@ -12,7 +12,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Tokenization classes."""
+
+"""Tokenization classes used for ERNIE and CokeBERT."""
 
 from __future__ import absolute_import
 from __future__ import division
@@ -23,7 +24,7 @@ import unicodedata
 import os
 import logging
 
-from .file_utils import cached_path
+from canlpy.core.util.file_utils import cached_path
 
 logger = logging.getLogger(__name__)
 
@@ -64,7 +65,7 @@ def load_vocab(vocab_file):
 
 
 def whitespace_tokenize(text):
-    """Runs basic whitespace cleaning and splitting on a peice of text."""
+    """Runs basic whitespace cleaning and splitting on a piece of text."""
     text = text.strip()
     if not text:
         return []
@@ -73,7 +74,7 @@ def whitespace_tokenize(text):
 
 def whitespace_tokenize_ent(text, ents,label=False):
 
-  #text = text.strip()
+    
   if not text:
     return []
 

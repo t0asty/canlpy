@@ -1,3 +1,6 @@
+#This file is adapted from the AllenNLP library at https://github.com/allenai/allennlp
+#Copyright by the AllenNLP authors.
+
 """
 A Vocabulary maps strings to integers, allowing for strings to be mapped to an
 out-of-vocabulary token.

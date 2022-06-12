@@ -1,3 +1,6 @@
+#This file is adapted from the AllenNLP library at https://github.com/allenai/allennlp
+#Copyright by the AllenNLP authors.
+
 from typing import Dict, List
 import copy
 
@@ -12,6 +15,10 @@ sep_token = "[SEP]"
 
 
 def truncate_sequence_pair(word_piece_tokens_a, word_piece_tokens_b, max_word_piece_sequence_length):
+    """
+    Truncates `word_piece_tokens_a` and `word_piece_tokens_b` until so that they have almost the same size
+    and len(a) + len(b) = `max_word_piece_sequence_length`
+    """
     length_a = sum([len(x) for x in word_piece_tokens_a])
     length_b = sum([len(x) for x in word_piece_tokens_b])
     while max_word_piece_sequence_length < length_a + length_b:
@@ -24,12 +31,29 @@ def truncate_sequence_pair(word_piece_tokens_a, word_piece_tokens_b, max_word_pi
 
 
 class TokenizerAndCandidateGenerator():
+    """
+    A class that can process a sentence and returns its tokens as well as the corresponding candidate entities
+    """
     pass
 
 class MentionGenerator():
+    """
+    A class that can detect entity mentions in a string
+    """
     pass
 
 class BertTokenizerAndCandidateGenerator(TokenizerAndCandidateGenerator):
+    """
+    A class that can tokenize a sentence for BERT-like models and well as detect the candidate entities in the text
+
+    Parameters:
+        entity_candidate_generators: a dictionnary of entity detectors
+        bert_model_type: the bert model type to tokenize for
+        do_lower_case: whether to lowercase the sentence
+        whitespace_tokenize: whether to whitespace tokenize
+        max_word_piece_sequence_length: the maximum number of tokens allowed
+
+    """
     def __init__(self,
                  entity_candidate_generators: Dict[str, MentionGenerator],
                  bert_model_type: str,
@@ -63,24 +87,27 @@ class BertTokenizerAndCandidateGenerator(TokenizerAndCandidateGenerator):
 
     def tokenize_and_generate_candidates(self, text_a: str, text_b: str = None):
         """
-        # run BertTokenizer.basic_tokenizer.tokenize on sentence1 and sentence2 to word tokenization
-        # generate candidate mentions for each of the generators and for each of sentence1 and 2 from word tokenized text
-        # run BertTokenizer.wordpiece_tokenizer on sentence1 and sentence2
-        # truncate length, add [CLS] and [SEP] to word pieces
-        # compute token offsets
-        # combine candidate mention spans from sentence1 and sentence2 and remap to word piece indices
+        Run BertTokenizer.basic_tokenizer.tokenize on sentence1 and sentence2 to word tokenization
+        generate candidate mentions for each of the generators and for each of sentence1 and 2 from word tokenized text
+        run BertTokenizer.wordpiece_tokenizer on sentence1 and sentence2
+        truncate length, add [CLS] and [SEP] to word pieces
+        compute token offsets
+        combine candidate mention spans from sentence1 and sentence2 and remap to word piece indices
 
-        returns:
+        Args:
+            text_a: the first sentence
+            text_b: optional, the second sentence
 
-        {'tokens': List[str], the word piece strings with [CLS] [SEP]
-         'segment_ids': List[int] the same length as 'tokens' with 0/1 for sentence1 vs 2
-         'candidates': Dict[str, Dict[str, Any]],
-            {'wordnet': {'candidate_spans': List[List[int]],
-                         'candidate_entities': List[List[str]],
-                         'candidate_entity_prior': List[List[float]],
-                         'segment_ids': List[int]},
-             'wiki': ...}
-        }
+        Returns: 
+            {'tokens': List[str], the word piece strings with [CLS] [SEP]
+            'segment_ids': List[int] the same length as 'tokens' with 0/1 for sentence1 vs 2
+            'candidates': Dict[str, Dict[str, Any]],
+                {'wordnet': {'candidate_spans': List[List[int]],
+                            'candidate_entities': List[List[str]],
+                            'candidate_entity_prior': List[List[float]],
+                            'segment_ids': List[int]},
+                'wiki': ...}
+            }
         """
         offsets_a, grouped_wp_a, tokens_a = self._tokenize_text(text_a)
 
@@ -236,10 +263,16 @@ class BertTokenizerAndCandidateGenerator(TokenizerAndCandidateGenerator):
 
     #custom
     def convert_tokens_candidates_to_array(self, tokens_and_candidates, entity_vocabulary):
+        
         """
-        tokens_and_candidates is the return from a previous call to
-        generate_sentence_entity_candidates. entity_vocabulary is the vocabulary used to convert from
-        text entiy to ids. Converts the dict to a dict of numpy array
+        Converts the dict to a dict of numpy array
+
+        Args:
+            tokens_and_candidates: the return from a previous call togenerate_sentence_entity_candidates. 
+            entity_vocabulary: is the vocabulary used to convert from text entiy to ids.
+        
+        Returns:
+            a dictionnary of numpy arrays
         """
         fields = {}
 
@@ -288,10 +321,8 @@ class PretokenizedTokenizerAndCandidateGenerator(BertTokenizerAndCandidateGenera
     """
     Simple modification to the ``BertTokenizerAndCandidateGenerator``. We assume data comes
     pre-tokenized, so only wordpiece splitting is performed.
-
-    # TODO: mypy is not going to like us calling ``tokenize_and_generate_candidates()`` on lists
-    # instead of strings. Maybe update type annotations in ``BertTokenizerAndCandidateGenerator``?
     """
+
     def _tokenize_text(self, tokens: List[str]):
         word_piece_tokens = []
         offsets = [0]
