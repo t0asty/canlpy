@@ -66,22 +66,28 @@
                         <div class="pdoc-code codehilite"><pre><span></span><span id="L-1"><a href="#L-1"><span class="linenos"> 1</span></a><span class="kn">import</span> <span class="nn">torch.nn</span> <span class="k">as</span> <span class="nn">nn</span>
 </span><span id="L-2"><a href="#L-2"><span class="linenos"> 2</span></a>
 </span><span id="L-3"><a href="#L-3"><span class="linenos"> 3</span></a><span class="k">class</span> <span class="nc">Fusion</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
-</span><span id="L-4"><a href="#L-4"><span class="linenos"> 4</span></a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-</span><span id="L-5"><a href="#L-5"><span class="linenos"> 5</span></a>        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
-</span><span id="L-6"><a href="#L-6"><span class="linenos"> 6</span></a>    
-</span><span id="L-7"><a href="#L-7"><span class="linenos"> 7</span></a>    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">args</span><span class="p">):</span>
-</span><span id="L-8"><a href="#L-8"><span class="linenos"> 8</span></a>        <span class="sd">&quot;&quot;&quot;</span>
-</span><span id="L-9"><a href="#L-9"><span class="linenos"> 9</span></a><span class="sd">        Performs the information fusion between the token and entity emmbeddings</span>
-</span><span id="L-10"><a href="#L-10"><span class="linenos">10</span></a><span class="sd">        Args:</span>
-</span><span id="L-11"><a href="#L-11"><span class="linenos">11</span></a><span class="sd">            May contain:</span>
-</span><span id="L-12"><a href="#L-12"><span class="linenos">12</span></a><span class="sd">            token_embeddings: the tokens embeddings</span>
-</span><span id="L-13"><a href="#L-13"><span class="linenos">13</span></a><span class="sd">            entity_embeddings: the entity embeddings</span>
-</span><span id="L-14"><a href="#L-14"><span class="linenos">14</span></a><span class="sd">            token/entity masks</span>
-</span><span id="L-15"><a href="#L-15"><span class="linenos">15</span></a><span class="sd">        Returns:</span>
-</span><span id="L-16"><a href="#L-16"><span class="linenos">16</span></a><span class="sd">            token_embeddings: the enhanced embeddings of the tokens </span>
-</span><span id="L-17"><a href="#L-17"><span class="linenos">17</span></a><span class="sd">            entity embeddings(Optional): the enhanced embeddings of the entities</span>
-</span><span id="L-18"><a href="#L-18"><span class="linenos">18</span></a><span class="sd">        &quot;&quot;&quot;</span>
-</span><span id="L-19"><a href="#L-19"><span class="linenos">19</span></a>        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">()</span>
+</span><span id="L-4"><a href="#L-4"><span class="linenos"> 4</span></a>    <span class="sd">&quot;&quot;&quot;Abstract class for the fusion of text and knowledge representations</span>
+</span><span id="L-5"><a href="#L-5"><span class="linenos"> 5</span></a><span class="sd">    </span>
+</span><span id="L-6"><a href="#L-6"><span class="linenos"> 6</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="L-7"><a href="#L-7"><span class="linenos"> 7</span></a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span><span id="L-8"><a href="#L-8"><span class="linenos"> 8</span></a>        <span class="sd">&quot;&quot;&quot; TO BE OVERWRITTEN  </span>
+</span><span id="L-9"><a href="#L-9"><span class="linenos"> 9</span></a><span class="sd">        constructs Fusion module</span>
+</span><span id="L-10"><a href="#L-10"><span class="linenos">10</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="L-11"><a href="#L-11"><span class="linenos">11</span></a>        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+</span><span id="L-12"><a href="#L-12"><span class="linenos">12</span></a>    
+</span><span id="L-13"><a href="#L-13"><span class="linenos">13</span></a>    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">args</span><span class="p">):</span>
+</span><span id="L-14"><a href="#L-14"><span class="linenos">14</span></a>        <span class="sd">&quot;&quot;&quot; TO BE OVERWRITTEN</span>
+</span><span id="L-15"><a href="#L-15"><span class="linenos">15</span></a><span class="sd">        Performs the information fusion between the token and entity embeddings</span>
+</span><span id="L-16"><a href="#L-16"><span class="linenos">16</span></a><span class="sd">        Args:</span>
+</span><span id="L-17"><a href="#L-17"><span class="linenos">17</span></a><span class="sd">            May contain:</span>
+</span><span id="L-18"><a href="#L-18"><span class="linenos">18</span></a><span class="sd">            token_embeddings: the tokens embeddings</span>
+</span><span id="L-19"><a href="#L-19"><span class="linenos">19</span></a><span class="sd">            entity_embeddings: the entity embeddings</span>
+</span><span id="L-20"><a href="#L-20"><span class="linenos">20</span></a><span class="sd">            token/entity masks</span>
+</span><span id="L-21"><a href="#L-21"><span class="linenos">21</span></a><span class="sd">        Returns:</span>
+</span><span id="L-22"><a href="#L-22"><span class="linenos">22</span></a><span class="sd">            token_embeddings: the enhanced embeddings of the tokens </span>
+</span><span id="L-23"><a href="#L-23"><span class="linenos">23</span></a><span class="sd">            entity embeddings(Optional): the enhanced embeddings of the entities</span>
+</span><span id="L-24"><a href="#L-24"><span class="linenos">24</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="L-25"><a href="#L-25"><span class="linenos">25</span></a>        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">()</span>
 </span></pre></div>
 
 
@@ -98,59 +104,32 @@
     </div>
     <a class="headerlink" href="#Fusion"></a>
             <div class="pdoc-code codehilite"><pre><span></span><span id="Fusion-4"><a href="#Fusion-4"><span class="linenos"> 4</span></a><span class="k">class</span> <span class="nc">Fusion</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
-</span><span id="Fusion-5"><a href="#Fusion-5"><span class="linenos"> 5</span></a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-</span><span id="Fusion-6"><a href="#Fusion-6"><span class="linenos"> 6</span></a>        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
-</span><span id="Fusion-7"><a href="#Fusion-7"><span class="linenos"> 7</span></a>    
-</span><span id="Fusion-8"><a href="#Fusion-8"><span class="linenos"> 8</span></a>    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">args</span><span class="p">):</span>
-</span><span id="Fusion-9"><a href="#Fusion-9"><span class="linenos"> 9</span></a>        <span class="sd">&quot;&quot;&quot;</span>
-</span><span id="Fusion-10"><a href="#Fusion-10"><span class="linenos">10</span></a><span class="sd">        Performs the information fusion between the token and entity emmbeddings</span>
-</span><span id="Fusion-11"><a href="#Fusion-11"><span class="linenos">11</span></a><span class="sd">        Args:</span>
-</span><span id="Fusion-12"><a href="#Fusion-12"><span class="linenos">12</span></a><span class="sd">            May contain:</span>
-</span><span id="Fusion-13"><a href="#Fusion-13"><span class="linenos">13</span></a><span class="sd">            token_embeddings: the tokens embeddings</span>
-</span><span id="Fusion-14"><a href="#Fusion-14"><span class="linenos">14</span></a><span class="sd">            entity_embeddings: the entity embeddings</span>
-</span><span id="Fusion-15"><a href="#Fusion-15"><span class="linenos">15</span></a><span class="sd">            token/entity masks</span>
-</span><span id="Fusion-16"><a href="#Fusion-16"><span class="linenos">16</span></a><span class="sd">        Returns:</span>
-</span><span id="Fusion-17"><a href="#Fusion-17"><span class="linenos">17</span></a><span class="sd">            token_embeddings: the enhanced embeddings of the tokens </span>
-</span><span id="Fusion-18"><a href="#Fusion-18"><span class="linenos">18</span></a><span class="sd">            entity embeddings(Optional): the enhanced embeddings of the entities</span>
-</span><span id="Fusion-19"><a href="#Fusion-19"><span class="linenos">19</span></a><span class="sd">        &quot;&quot;&quot;</span>
-</span><span id="Fusion-20"><a href="#Fusion-20"><span class="linenos">20</span></a>        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">()</span>
+</span><span id="Fusion-5"><a href="#Fusion-5"><span class="linenos"> 5</span></a>    <span class="sd">&quot;&quot;&quot;Abstract class for the fusion of text and knowledge representations</span>
+</span><span id="Fusion-6"><a href="#Fusion-6"><span class="linenos"> 6</span></a><span class="sd">    </span>
+</span><span id="Fusion-7"><a href="#Fusion-7"><span class="linenos"> 7</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="Fusion-8"><a href="#Fusion-8"><span class="linenos"> 8</span></a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span><span id="Fusion-9"><a href="#Fusion-9"><span class="linenos"> 9</span></a>        <span class="sd">&quot;&quot;&quot; TO BE OVERWRITTEN  </span>
+</span><span id="Fusion-10"><a href="#Fusion-10"><span class="linenos">10</span></a><span class="sd">        constructs Fusion module</span>
+</span><span id="Fusion-11"><a href="#Fusion-11"><span class="linenos">11</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="Fusion-12"><a href="#Fusion-12"><span class="linenos">12</span></a>        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+</span><span id="Fusion-13"><a href="#Fusion-13"><span class="linenos">13</span></a>    
+</span><span id="Fusion-14"><a href="#Fusion-14"><span class="linenos">14</span></a>    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">args</span><span class="p">):</span>
+</span><span id="Fusion-15"><a href="#Fusion-15"><span class="linenos">15</span></a>        <span class="sd">&quot;&quot;&quot; TO BE OVERWRITTEN</span>
+</span><span id="Fusion-16"><a href="#Fusion-16"><span class="linenos">16</span></a><span class="sd">        Performs the information fusion between the token and entity embeddings</span>
+</span><span id="Fusion-17"><a href="#Fusion-17"><span class="linenos">17</span></a><span class="sd">        Args:</span>
+</span><span id="Fusion-18"><a href="#Fusion-18"><span class="linenos">18</span></a><span class="sd">            May contain:</span>
+</span><span id="Fusion-19"><a href="#Fusion-19"><span class="linenos">19</span></a><span class="sd">            token_embeddings: the tokens embeddings</span>
+</span><span id="Fusion-20"><a href="#Fusion-20"><span class="linenos">20</span></a><span class="sd">            entity_embeddings: the entity embeddings</span>
+</span><span id="Fusion-21"><a href="#Fusion-21"><span class="linenos">21</span></a><span class="sd">            token/entity masks</span>
+</span><span id="Fusion-22"><a href="#Fusion-22"><span class="linenos">22</span></a><span class="sd">        Returns:</span>
+</span><span id="Fusion-23"><a href="#Fusion-23"><span class="linenos">23</span></a><span class="sd">            token_embeddings: the enhanced embeddings of the tokens </span>
+</span><span id="Fusion-24"><a href="#Fusion-24"><span class="linenos">24</span></a><span class="sd">            entity embeddings(Optional): the enhanced embeddings of the entities</span>
+</span><span id="Fusion-25"><a href="#Fusion-25"><span class="linenos">25</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="Fusion-26"><a href="#Fusion-26"><span class="linenos">26</span></a>        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">()</span>
 </span></pre></div>
 
 
-            <div class="docstring"><p>Base class for all neural network modules.</p>
-
-<p>Your models should also subclass this class.</p>
-
-<p>Modules can also contain other Modules, allowing to nest them in
-a tree structure. You can assign the submodules as regular attributes::</p>
-
-<pre><code>import torch.nn as nn
-import torch.nn.functional as F
-
-class Model(nn.Module):
-    def __init__(self):
-        super().__init__()
-        self.conv1 = nn.Conv2d(1, 20, 5)
-        self.conv2 = nn.Conv2d(20, 20, 5)
-
-    def forward(self, x):
-        x = F.relu(self.conv1(x))
-        return F.relu(self.conv2(x))
-</code></pre>
-
-<p>Submodules assigned in this way will be registered, and will have their
-parameters converted too when you call <code><a href="#Fusion.to">to</a></code>, etc.</p>
-
-<div class="pdoc-alert pdoc-alert-note">
-
-<p>As per the example above, an <code><a href="#Fusion.__init__">__init__()</a></code> call to the parent class
-must be made before assignment on the child.</p>
-
-</div>
-
-<p>:ivar training: Boolean represents whether this module is in training or
-                evaluation mode.
-:vartype training: bool</p>
+            <div class="docstring"><p>Abstract class for the fusion of text and knowledge representations</p>
 </div>
 
 
@@ -164,12 +143,16 @@ must be made before assignment on the child.</p>
 
     </div>
     <a class="headerlink" href="#Fusion.__init__"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="Fusion.__init__-5"><a href="#Fusion.__init__-5"><span class="linenos">5</span></a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-</span><span id="Fusion.__init__-6"><a href="#Fusion.__init__-6"><span class="linenos">6</span></a>        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="Fusion.__init__-8"><a href="#Fusion.__init__-8"><span class="linenos"> 8</span></a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span><span id="Fusion.__init__-9"><a href="#Fusion.__init__-9"><span class="linenos"> 9</span></a>        <span class="sd">&quot;&quot;&quot; TO BE OVERWRITTEN  </span>
+</span><span id="Fusion.__init__-10"><a href="#Fusion.__init__-10"><span class="linenos">10</span></a><span class="sd">        constructs Fusion module</span>
+</span><span id="Fusion.__init__-11"><a href="#Fusion.__init__-11"><span class="linenos">11</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="Fusion.__init__-12"><a href="#Fusion.__init__-12"><span class="linenos">12</span></a>        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
 </span></pre></div>
 
 
-            <div class="docstring"><p>Initializes internal Module state, shared by both nn.Module and ScriptModule.</p>
+            <div class="docstring"><p>TO BE OVERWRITTEN <br />
+constructs Fusion module</p>
 </div>
 
 
@@ -185,23 +168,24 @@ must be made before assignment on the child.</p>
 
     </div>
     <a class="headerlink" href="#Fusion.forward"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="Fusion.forward-8"><a href="#Fusion.forward-8"><span class="linenos"> 8</span></a>    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">args</span><span class="p">):</span>
-</span><span id="Fusion.forward-9"><a href="#Fusion.forward-9"><span class="linenos"> 9</span></a>        <span class="sd">&quot;&quot;&quot;</span>
-</span><span id="Fusion.forward-10"><a href="#Fusion.forward-10"><span class="linenos">10</span></a><span class="sd">        Performs the information fusion between the token and entity emmbeddings</span>
-</span><span id="Fusion.forward-11"><a href="#Fusion.forward-11"><span class="linenos">11</span></a><span class="sd">        Args:</span>
-</span><span id="Fusion.forward-12"><a href="#Fusion.forward-12"><span class="linenos">12</span></a><span class="sd">            May contain:</span>
-</span><span id="Fusion.forward-13"><a href="#Fusion.forward-13"><span class="linenos">13</span></a><span class="sd">            token_embeddings: the tokens embeddings</span>
-</span><span id="Fusion.forward-14"><a href="#Fusion.forward-14"><span class="linenos">14</span></a><span class="sd">            entity_embeddings: the entity embeddings</span>
-</span><span id="Fusion.forward-15"><a href="#Fusion.forward-15"><span class="linenos">15</span></a><span class="sd">            token/entity masks</span>
-</span><span id="Fusion.forward-16"><a href="#Fusion.forward-16"><span class="linenos">16</span></a><span class="sd">        Returns:</span>
-</span><span id="Fusion.forward-17"><a href="#Fusion.forward-17"><span class="linenos">17</span></a><span class="sd">            token_embeddings: the enhanced embeddings of the tokens </span>
-</span><span id="Fusion.forward-18"><a href="#Fusion.forward-18"><span class="linenos">18</span></a><span class="sd">            entity embeddings(Optional): the enhanced embeddings of the entities</span>
-</span><span id="Fusion.forward-19"><a href="#Fusion.forward-19"><span class="linenos">19</span></a><span class="sd">        &quot;&quot;&quot;</span>
-</span><span id="Fusion.forward-20"><a href="#Fusion.forward-20"><span class="linenos">20</span></a>        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">()</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="Fusion.forward-14"><a href="#Fusion.forward-14"><span class="linenos">14</span></a>    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">args</span><span class="p">):</span>
+</span><span id="Fusion.forward-15"><a href="#Fusion.forward-15"><span class="linenos">15</span></a>        <span class="sd">&quot;&quot;&quot; TO BE OVERWRITTEN</span>
+</span><span id="Fusion.forward-16"><a href="#Fusion.forward-16"><span class="linenos">16</span></a><span class="sd">        Performs the information fusion between the token and entity embeddings</span>
+</span><span id="Fusion.forward-17"><a href="#Fusion.forward-17"><span class="linenos">17</span></a><span class="sd">        Args:</span>
+</span><span id="Fusion.forward-18"><a href="#Fusion.forward-18"><span class="linenos">18</span></a><span class="sd">            May contain:</span>
+</span><span id="Fusion.forward-19"><a href="#Fusion.forward-19"><span class="linenos">19</span></a><span class="sd">            token_embeddings: the tokens embeddings</span>
+</span><span id="Fusion.forward-20"><a href="#Fusion.forward-20"><span class="linenos">20</span></a><span class="sd">            entity_embeddings: the entity embeddings</span>
+</span><span id="Fusion.forward-21"><a href="#Fusion.forward-21"><span class="linenos">21</span></a><span class="sd">            token/entity masks</span>
+</span><span id="Fusion.forward-22"><a href="#Fusion.forward-22"><span class="linenos">22</span></a><span class="sd">        Returns:</span>
+</span><span id="Fusion.forward-23"><a href="#Fusion.forward-23"><span class="linenos">23</span></a><span class="sd">            token_embeddings: the enhanced embeddings of the tokens </span>
+</span><span id="Fusion.forward-24"><a href="#Fusion.forward-24"><span class="linenos">24</span></a><span class="sd">            entity embeddings(Optional): the enhanced embeddings of the entities</span>
+</span><span id="Fusion.forward-25"><a href="#Fusion.forward-25"><span class="linenos">25</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="Fusion.forward-26"><a href="#Fusion.forward-26"><span class="linenos">26</span></a>        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">()</span>
 </span></pre></div>
 
 
-            <div class="docstring"><p>Performs the information fusion between the token and entity emmbeddings</p>
+            <div class="docstring"><p>TO BE OVERWRITTEN
+Performs the information fusion between the token and entity embeddings</p>
 
 <h6 id="args">Args</h6>
 

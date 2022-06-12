@@ -123,90 +123,167 @@
 
                         <label class="view-source-button" for="heads-view-source"><span>View Source</span></label>
 
-                        <div class="pdoc-code codehilite"><pre><span></span><span id="L-1"><a href="#L-1"><span class="linenos"> 1</span></a><span class="kn">import</span> <span class="nn">copy</span>
-</span><span id="L-2"><a href="#L-2"><span class="linenos"> 2</span></a><span class="kn">import</span> <span class="nn">torch</span>
-</span><span id="L-3"><a href="#L-3"><span class="linenos"> 3</span></a><span class="kn">import</span> <span class="nn">torch.nn</span> <span class="k">as</span> <span class="nn">nn</span>
-</span><span id="L-4"><a href="#L-4"><span class="linenos"> 4</span></a><span class="kn">from</span> <span class="nn">canlpy.core.models.bert.model</span> <span class="kn">import</span> <span class="n">LayerNorm</span>
-</span><span id="L-5"><a href="#L-5"><span class="linenos"> 5</span></a><span class="kn">from</span> <span class="nn">canlpy.core.components.activation_functions</span> <span class="kn">import</span> <span class="n">get_activation_function</span>
-</span><span id="L-6"><a href="#L-6"><span class="linenos"> 6</span></a>
-</span><span id="L-7"><a href="#L-7"><span class="linenos"> 7</span></a><span class="k">class</span> <span class="nc">BertLMPredictionHead</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
-</span><span id="L-8"><a href="#L-8"><span class="linenos"> 8</span></a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">,</span> <span class="n">bert_model_embedding_weights</span><span class="p">):</span>
-</span><span id="L-9"><a href="#L-9"><span class="linenos"> 9</span></a>        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
-</span><span id="L-10"><a href="#L-10"><span class="linenos">10</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">transform</span> <span class="o">=</span> <span class="n">BertPredictionHeadTransform</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
-</span><span id="L-11"><a href="#L-11"><span class="linenos">11</span></a>
-</span><span id="L-12"><a href="#L-12"><span class="linenos">12</span></a>        <span class="c1"># The output weights are the same as the input embeddings, but there is</span>
-</span><span id="L-13"><a href="#L-13"><span class="linenos">13</span></a>        <span class="c1"># an output-only bias for each token.</span>
-</span><span id="L-14"><a href="#L-14"><span class="linenos">14</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">decoder</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">bert_model_embedding_weights</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span>
-</span><span id="L-15"><a href="#L-15"><span class="linenos">15</span></a>                                 <span class="n">bert_model_embedding_weights</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span>
-</span><span id="L-16"><a href="#L-16"><span class="linenos">16</span></a>                                 <span class="n">bias</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-</span><span id="L-17"><a href="#L-17"><span class="linenos">17</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">decoder</span><span class="o">.</span><span class="n">weight</span> <span class="o">=</span> <span class="n">bert_model_embedding_weights</span>
-</span><span id="L-18"><a href="#L-18"><span class="linenos">18</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">bias</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Parameter</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">bert_model_embedding_weights</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="mi">0</span><span class="p">)))</span>
-</span><span id="L-19"><a href="#L-19"><span class="linenos">19</span></a>
-</span><span id="L-20"><a href="#L-20"><span class="linenos">20</span></a>    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hidden_states</span><span class="p">):</span>
-</span><span id="L-21"><a href="#L-21"><span class="linenos">21</span></a>        <span class="n">hidden_states</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">hidden_states</span><span class="p">)</span>
-</span><span id="L-22"><a href="#L-22"><span class="linenos">22</span></a>        <span class="n">hidden_states</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">decoder</span><span class="p">(</span><span class="n">hidden_states</span><span class="p">)</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">bias</span>
-</span><span id="L-23"><a href="#L-23"><span class="linenos">23</span></a>        <span class="k">return</span> <span class="n">hidden_states</span>
-</span><span id="L-24"><a href="#L-24"><span class="linenos">24</span></a>
-</span><span id="L-25"><a href="#L-25"><span class="linenos">25</span></a><span class="k">class</span> <span class="nc">BertOnlyMLMHead</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
-</span><span id="L-26"><a href="#L-26"><span class="linenos">26</span></a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">,</span> <span class="n">bert_model_embedding_weights</span><span class="p">):</span>
-</span><span id="L-27"><a href="#L-27"><span class="linenos">27</span></a>        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
-</span><span id="L-28"><a href="#L-28"><span class="linenos">28</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">predictions</span> <span class="o">=</span> <span class="n">BertLMPredictionHead</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">bert_model_embedding_weights</span><span class="p">)</span>
-</span><span id="L-29"><a href="#L-29"><span class="linenos">29</span></a>
-</span><span id="L-30"><a href="#L-30"><span class="linenos">30</span></a>    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sequence_output</span><span class="p">):</span>
-</span><span id="L-31"><a href="#L-31"><span class="linenos">31</span></a>        <span class="n">prediction_scores</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">predictions</span><span class="p">(</span><span class="n">sequence_output</span><span class="p">)</span>
-</span><span id="L-32"><a href="#L-32"><span class="linenos">32</span></a>        <span class="k">return</span> <span class="n">prediction_scores</span>
-</span><span id="L-33"><a href="#L-33"><span class="linenos">33</span></a>
-</span><span id="L-34"><a href="#L-34"><span class="linenos">34</span></a><span class="k">class</span> <span class="nc">BertPredictionHeadTransform</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
-</span><span id="L-35"><a href="#L-35"><span class="linenos">35</span></a>
-</span><span id="L-36"><a href="#L-36"><span class="linenos">36</span></a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">):</span>
-</span><span id="L-37"><a href="#L-37"><span class="linenos">37</span></a>        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
-</span><span id="L-38"><a href="#L-38"><span class="linenos">38</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">dense</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">)</span>
-</span><span id="L-39"><a href="#L-39"><span class="linenos">39</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">transform_act_fn</span> <span class="o">=</span> <span class="n">get_activation_function</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">hidden_act</span><span class="p">)</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">hidden_act</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">else</span> <span class="n">config</span><span class="o">.</span><span class="n">hidden_act</span>
-</span><span id="L-40"><a href="#L-40"><span class="linenos">40</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">LayerNorm</span> <span class="o">=</span> <span class="n">LayerNorm</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">,</span> <span class="n">eps</span><span class="o">=</span><span class="mf">1e-12</span><span class="p">)</span>
-</span><span id="L-41"><a href="#L-41"><span class="linenos">41</span></a>
-</span><span id="L-42"><a href="#L-42"><span class="linenos">42</span></a>    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hidden_states</span><span class="p">):</span>
-</span><span id="L-43"><a href="#L-43"><span class="linenos">43</span></a>        <span class="n">hidden_states</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dense</span><span class="p">(</span><span class="n">hidden_states</span><span class="p">)</span>
-</span><span id="L-44"><a href="#L-44"><span class="linenos">44</span></a>        <span class="n">hidden_states</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">transform_act_fn</span><span class="p">(</span><span class="n">hidden_states</span><span class="p">)</span>
-</span><span id="L-45"><a href="#L-45"><span class="linenos">45</span></a>        <span class="n">hidden_states</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">LayerNorm</span><span class="p">(</span><span class="n">hidden_states</span><span class="p">)</span>
-</span><span id="L-46"><a href="#L-46"><span class="linenos">46</span></a>        <span class="k">return</span> <span class="n">hidden_states</span>
-</span><span id="L-47"><a href="#L-47"><span class="linenos">47</span></a>
-</span><span id="L-48"><a href="#L-48"><span class="linenos">48</span></a><span class="k">class</span> <span class="nc">BertOnlyNSPHead</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
-</span><span id="L-49"><a href="#L-49"><span class="linenos">49</span></a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">):</span>
-</span><span id="L-50"><a href="#L-50"><span class="linenos">50</span></a>        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
-</span><span id="L-51"><a href="#L-51"><span class="linenos">51</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">seq_relationship</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
-</span><span id="L-52"><a href="#L-52"><span class="linenos">52</span></a>
-</span><span id="L-53"><a href="#L-53"><span class="linenos">53</span></a>    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pooled_output</span><span class="p">):</span>
-</span><span id="L-54"><a href="#L-54"><span class="linenos">54</span></a>        <span class="n">seq_relationship_score</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">seq_relationship</span><span class="p">(</span><span class="n">pooled_output</span><span class="p">)</span>
-</span><span id="L-55"><a href="#L-55"><span class="linenos">55</span></a>        <span class="k">return</span> <span class="n">seq_relationship_score</span>
-</span><span id="L-56"><a href="#L-56"><span class="linenos">56</span></a>
-</span><span id="L-57"><a href="#L-57"><span class="linenos">57</span></a><span class="k">class</span> <span class="nc">ErnieEntPredictionHead</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
-</span><span id="L-58"><a href="#L-58"><span class="linenos">58</span></a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">):</span>
-</span><span id="L-59"><a href="#L-59"><span class="linenos">59</span></a>        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
-</span><span id="L-60"><a href="#L-60"><span class="linenos">60</span></a>        <span class="n">config_ent</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
-</span><span id="L-61"><a href="#L-61"><span class="linenos">61</span></a>        <span class="c1">#Replace the hidden_size by the entity size for the Bert head to have the correct dimension</span>
-</span><span id="L-62"><a href="#L-62"><span class="linenos">62</span></a>        <span class="n">config_ent</span><span class="o">.</span><span class="n">hidden_size</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">ent</span><span class="o">.</span><span class="n">entity_size</span>
-</span><span id="L-63"><a href="#L-63"><span class="linenos">63</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">transform</span> <span class="o">=</span> <span class="n">BertPredictionHeadTransform</span><span class="p">(</span><span class="n">config_ent</span><span class="p">)</span>
-</span><span id="L-64"><a href="#L-64"><span class="linenos">64</span></a>
-</span><span id="L-65"><a href="#L-65"><span class="linenos">65</span></a>    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hidden_states</span><span class="p">,</span> <span class="n">candidate</span><span class="p">):</span>
-</span><span id="L-66"><a href="#L-66"><span class="linenos">66</span></a>        <span class="n">hidden_states</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">hidden_states</span><span class="p">)</span>
-</span><span id="L-67"><a href="#L-67"><span class="linenos">67</span></a>        <span class="n">candidate</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="n">candidate</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
-</span><span id="L-68"><a href="#L-68"><span class="linenos">68</span></a>        <span class="c1"># hidden_states [batch_size, max_seq, dim]</span>
-</span><span id="L-69"><a href="#L-69"><span class="linenos">69</span></a>        <span class="c1"># candidate [entity_num_in_the_batch, dim]</span>
-</span><span id="L-70"><a href="#L-70"><span class="linenos">70</span></a>        <span class="c1"># return [batch_size, max_seq, entity_num_in_the_batch]</span>
-</span><span id="L-71"><a href="#L-71"><span class="linenos">71</span></a>        <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">matmul</span><span class="p">(</span><span class="n">hidden_states</span><span class="p">,</span> <span class="n">candidate</span><span class="o">.</span><span class="n">t</span><span class="p">())</span>
-</span><span id="L-72"><a href="#L-72"><span class="linenos">72</span></a>
-</span><span id="L-73"><a href="#L-73"><span class="linenos">73</span></a><span class="k">class</span> <span class="nc">ErniePreTrainingHeads</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
-</span><span id="L-74"><a href="#L-74"><span class="linenos">74</span></a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">,</span> <span class="n">bert_model_embedding_weights</span><span class="p">):</span>
-</span><span id="L-75"><a href="#L-75"><span class="linenos">75</span></a>        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
-</span><span id="L-76"><a href="#L-76"><span class="linenos">76</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">predictions</span> <span class="o">=</span> <span class="n">BertLMPredictionHead</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">bert_model_embedding_weights</span><span class="p">)</span>
-</span><span id="L-77"><a href="#L-77"><span class="linenos">77</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">predictions_ent</span> <span class="o">=</span> <span class="n">BertEntPredictionHead</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
-</span><span id="L-78"><a href="#L-78"><span class="linenos">78</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">seq_relationship</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
-</span><span id="L-79"><a href="#L-79"><span class="linenos">79</span></a>
-</span><span id="L-80"><a href="#L-80"><span class="linenos">80</span></a>    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sequence_output</span><span class="p">,</span> <span class="n">pooled_output</span><span class="p">,</span> <span class="n">candidate</span><span class="p">):</span>
-</span><span id="L-81"><a href="#L-81"><span class="linenos">81</span></a>        <span class="n">prediction_scores</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">predictions</span><span class="p">(</span><span class="n">sequence_output</span><span class="p">)</span>
-</span><span id="L-82"><a href="#L-82"><span class="linenos">82</span></a>        <span class="n">seq_relationship_score</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">seq_relationship</span><span class="p">(</span><span class="n">pooled_output</span><span class="p">)</span>
-</span><span id="L-83"><a href="#L-83"><span class="linenos">83</span></a>        <span class="n">prediction_scores_ent</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">predictions_ent</span><span class="p">(</span><span class="n">sequence_output</span><span class="p">,</span> <span class="n">candidate</span><span class="p">)</span>
-</span><span id="L-84"><a href="#L-84"><span class="linenos">84</span></a>        <span class="k">return</span> <span class="n">prediction_scores</span><span class="p">,</span> <span class="n">seq_relationship_score</span><span class="p">,</span> <span class="n">prediction_scores_ent</span>
+                        <div class="pdoc-code codehilite"><pre><span></span><span id="L-1"><a href="#L-1"><span class="linenos">  1</span></a><span class="kn">import</span> <span class="nn">copy</span>
+</span><span id="L-2"><a href="#L-2"><span class="linenos">  2</span></a><span class="kn">import</span> <span class="nn">torch</span>
+</span><span id="L-3"><a href="#L-3"><span class="linenos">  3</span></a><span class="kn">import</span> <span class="nn">torch.nn</span> <span class="k">as</span> <span class="nn">nn</span>
+</span><span id="L-4"><a href="#L-4"><span class="linenos">  4</span></a><span class="kn">from</span> <span class="nn">canlpy.core.models.bert.model</span> <span class="kn">import</span> <span class="n">LayerNorm</span>
+</span><span id="L-5"><a href="#L-5"><span class="linenos">  5</span></a><span class="kn">from</span> <span class="nn">canlpy.core.components.activation_functions</span> <span class="kn">import</span> <span class="n">get_activation_function</span>
+</span><span id="L-6"><a href="#L-6"><span class="linenos">  6</span></a>
+</span><span id="L-7"><a href="#L-7"><span class="linenos">  7</span></a><span class="k">class</span> <span class="nc">BertLMPredictionHead</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+</span><span id="L-8"><a href="#L-8"><span class="linenos">  8</span></a>    <span class="sd">&quot;&quot;&quot; Bert Head for using Bert as a predictive Language Model </span>
+</span><span id="L-9"><a href="#L-9"><span class="linenos">  9</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="L-10"><a href="#L-10"><span class="linenos"> 10</span></a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">,</span> <span class="n">bert_model_embedding_weights</span><span class="p">):</span>
+</span><span id="L-11"><a href="#L-11"><span class="linenos"> 11</span></a>        <span class="sd">&quot;&quot;&quot; constructs a `BertLMPredictionHead`</span>
+</span><span id="L-12"><a href="#L-12"><span class="linenos"> 12</span></a><span class="sd">        </span>
+</span><span id="L-13"><a href="#L-13"><span class="linenos"> 13</span></a><span class="sd">        Args:</span>
+</span><span id="L-14"><a href="#L-14"><span class="linenos"> 14</span></a><span class="sd">            config: a `BertConfig``</span>
+</span><span id="L-15"><a href="#L-15"><span class="linenos"> 15</span></a><span class="sd">            `bert_model_embedding_weights`:  torch.Tensor of size [hidden_size, vocab_size], the weights of the input embeddings of bert</span>
+</span><span id="L-16"><a href="#L-16"><span class="linenos"> 16</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="L-17"><a href="#L-17"><span class="linenos"> 17</span></a>        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+</span><span id="L-18"><a href="#L-18"><span class="linenos"> 18</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">transform</span> <span class="o">=</span> <span class="n">BertPredictionHeadTransform</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+</span><span id="L-19"><a href="#L-19"><span class="linenos"> 19</span></a>
+</span><span id="L-20"><a href="#L-20"><span class="linenos"> 20</span></a>        <span class="c1"># The output weights are the same as the input embeddings, but there is</span>
+</span><span id="L-21"><a href="#L-21"><span class="linenos"> 21</span></a>        <span class="c1"># an output-only bias for each token.</span>
+</span><span id="L-22"><a href="#L-22"><span class="linenos"> 22</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">decoder</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">bert_model_embedding_weights</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span>
+</span><span id="L-23"><a href="#L-23"><span class="linenos"> 23</span></a>                                 <span class="n">bert_model_embedding_weights</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span>
+</span><span id="L-24"><a href="#L-24"><span class="linenos"> 24</span></a>                                 <span class="n">bias</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+</span><span id="L-25"><a href="#L-25"><span class="linenos"> 25</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">decoder</span><span class="o">.</span><span class="n">weight</span> <span class="o">=</span> <span class="n">bert_model_embedding_weights</span>
+</span><span id="L-26"><a href="#L-26"><span class="linenos"> 26</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">bias</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Parameter</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">bert_model_embedding_weights</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="mi">0</span><span class="p">)))</span>
+</span><span id="L-27"><a href="#L-27"><span class="linenos"> 27</span></a>
+</span><span id="L-28"><a href="#L-28"><span class="linenos"> 28</span></a>    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hidden_states</span><span class="p">):</span>
+</span><span id="L-29"><a href="#L-29"><span class="linenos"> 29</span></a>        <span class="sd">&quot;&quot;&quot;Forward pass through the module</span>
+</span><span id="L-30"><a href="#L-30"><span class="linenos"> 30</span></a><span class="sd">        </span>
+</span><span id="L-31"><a href="#L-31"><span class="linenos"> 31</span></a><span class="sd">        Returns:</span>
+</span><span id="L-32"><a href="#L-32"><span class="linenos"> 32</span></a><span class="sd">            hidden_states: torch.Tensor of size [batch_size, seq_length, vocab_size], output representations</span>
+</span><span id="L-33"><a href="#L-33"><span class="linenos"> 33</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="L-34"><a href="#L-34"><span class="linenos"> 34</span></a>        <span class="n">hidden_states</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">hidden_states</span><span class="p">)</span>
+</span><span id="L-35"><a href="#L-35"><span class="linenos"> 35</span></a>        <span class="n">hidden_states</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">decoder</span><span class="p">(</span><span class="n">hidden_states</span><span class="p">)</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">bias</span>
+</span><span id="L-36"><a href="#L-36"><span class="linenos"> 36</span></a>        <span class="k">return</span> <span class="n">hidden_states</span>
+</span><span id="L-37"><a href="#L-37"><span class="linenos"> 37</span></a>
+</span><span id="L-38"><a href="#L-38"><span class="linenos"> 38</span></a><span class="k">class</span> <span class="nc">BertOnlyMLMHead</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+</span><span id="L-39"><a href="#L-39"><span class="linenos"> 39</span></a>    <span class="sd">&quot;&quot;&quot; Bert Head for the Masked Language Modeling Pre-training task of Bert</span>
+</span><span id="L-40"><a href="#L-40"><span class="linenos"> 40</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="L-41"><a href="#L-41"><span class="linenos"> 41</span></a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">,</span> <span class="n">bert_model_embedding_weights</span><span class="p">):</span>
+</span><span id="L-42"><a href="#L-42"><span class="linenos"> 42</span></a>        <span class="sd">&quot;&quot;&quot; constructs a `BertOnlyMLMHead`</span>
+</span><span id="L-43"><a href="#L-43"><span class="linenos"> 43</span></a><span class="sd">        </span>
+</span><span id="L-44"><a href="#L-44"><span class="linenos"> 44</span></a><span class="sd">        Args:</span>
+</span><span id="L-45"><a href="#L-45"><span class="linenos"> 45</span></a><span class="sd">            config: a `BertConfig`</span>
+</span><span id="L-46"><a href="#L-46"><span class="linenos"> 46</span></a><span class="sd">            `bert_model_embedding_weights`:  torch.Tensor of size [hidden_size, vocab_size], the weights of the input embeddings of bert</span>
+</span><span id="L-47"><a href="#L-47"><span class="linenos"> 47</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="L-48"><a href="#L-48"><span class="linenos"> 48</span></a>        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+</span><span id="L-49"><a href="#L-49"><span class="linenos"> 49</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">predictions</span> <span class="o">=</span> <span class="n">BertLMPredictionHead</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">bert_model_embedding_weights</span><span class="p">)</span>
+</span><span id="L-50"><a href="#L-50"><span class="linenos"> 50</span></a>
+</span><span id="L-51"><a href="#L-51"><span class="linenos"> 51</span></a>    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sequence_output</span><span class="p">):</span>
+</span><span id="L-52"><a href="#L-52"><span class="linenos"> 52</span></a>        <span class="sd">&quot;&quot;&quot;Forward pass through the module</span>
+</span><span id="L-53"><a href="#L-53"><span class="linenos"> 53</span></a><span class="sd">        </span>
+</span><span id="L-54"><a href="#L-54"><span class="linenos"> 54</span></a><span class="sd">        Returns:</span>
+</span><span id="L-55"><a href="#L-55"><span class="linenos"> 55</span></a><span class="sd">            hidden_states: torch.Tensor of size [batch_size, seq_length, vocab_size], output representations</span>
+</span><span id="L-56"><a href="#L-56"><span class="linenos"> 56</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="L-57"><a href="#L-57"><span class="linenos"> 57</span></a>        <span class="n">prediction_scores</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">predictions</span><span class="p">(</span><span class="n">sequence_output</span><span class="p">)</span>
+</span><span id="L-58"><a href="#L-58"><span class="linenos"> 58</span></a>        <span class="k">return</span> <span class="n">prediction_scores</span>
+</span><span id="L-59"><a href="#L-59"><span class="linenos"> 59</span></a>
+</span><span id="L-60"><a href="#L-60"><span class="linenos"> 60</span></a><span class="k">class</span> <span class="nc">BertPredictionHeadTransform</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+</span><span id="L-61"><a href="#L-61"><span class="linenos"> 61</span></a>    <span class="sd">&quot;&quot;&quot; Bert Head for the Masked Language Modeling Pre-training task of Bert</span>
+</span><span id="L-62"><a href="#L-62"><span class="linenos"> 62</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="L-63"><a href="#L-63"><span class="linenos"> 63</span></a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">):</span>
+</span><span id="L-64"><a href="#L-64"><span class="linenos"> 64</span></a>        <span class="sd">&quot;&quot;&quot;Constructs a `BertPredictionHeadTransform`</span>
+</span><span id="L-65"><a href="#L-65"><span class="linenos"> 65</span></a><span class="sd">        </span>
+</span><span id="L-66"><a href="#L-66"><span class="linenos"> 66</span></a><span class="sd">        Args:</span>
+</span><span id="L-67"><a href="#L-67"><span class="linenos"> 67</span></a><span class="sd">            config: a `BertConfig`</span>
+</span><span id="L-68"><a href="#L-68"><span class="linenos"> 68</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="L-69"><a href="#L-69"><span class="linenos"> 69</span></a>        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+</span><span id="L-70"><a href="#L-70"><span class="linenos"> 70</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">dense</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">)</span>
+</span><span id="L-71"><a href="#L-71"><span class="linenos"> 71</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">transform_act_fn</span> <span class="o">=</span> <span class="n">get_activation_function</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">hidden_act</span><span class="p">)</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">hidden_act</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">else</span> <span class="n">config</span><span class="o">.</span><span class="n">hidden_act</span>
+</span><span id="L-72"><a href="#L-72"><span class="linenos"> 72</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">LayerNorm</span> <span class="o">=</span> <span class="n">LayerNorm</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">,</span> <span class="n">eps</span><span class="o">=</span><span class="mf">1e-12</span><span class="p">)</span>
+</span><span id="L-73"><a href="#L-73"><span class="linenos"> 73</span></a>
+</span><span id="L-74"><a href="#L-74"><span class="linenos"> 74</span></a>    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hidden_states</span><span class="p">):</span>
+</span><span id="L-75"><a href="#L-75"><span class="linenos"> 75</span></a>        <span class="sd">&quot;&quot;&quot; Forward pass through the module</span>
+</span><span id="L-76"><a href="#L-76"><span class="linenos"> 76</span></a><span class="sd">        </span>
+</span><span id="L-77"><a href="#L-77"><span class="linenos"> 77</span></a><span class="sd">        Returns:</span>
+</span><span id="L-78"><a href="#L-78"><span class="linenos"> 78</span></a><span class="sd">            hidden_states: a torch.Tensor of size [batch_size, seq_length, hidden_size]</span>
+</span><span id="L-79"><a href="#L-79"><span class="linenos"> 79</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="L-80"><a href="#L-80"><span class="linenos"> 80</span></a>        <span class="n">hidden_states</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dense</span><span class="p">(</span><span class="n">hidden_states</span><span class="p">)</span>
+</span><span id="L-81"><a href="#L-81"><span class="linenos"> 81</span></a>        <span class="n">hidden_states</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">transform_act_fn</span><span class="p">(</span><span class="n">hidden_states</span><span class="p">)</span>
+</span><span id="L-82"><a href="#L-82"><span class="linenos"> 82</span></a>        <span class="n">hidden_states</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">LayerNorm</span><span class="p">(</span><span class="n">hidden_states</span><span class="p">)</span>
+</span><span id="L-83"><a href="#L-83"><span class="linenos"> 83</span></a>        <span class="k">return</span> <span class="n">hidden_states</span>
+</span><span id="L-84"><a href="#L-84"><span class="linenos"> 84</span></a>
+</span><span id="L-85"><a href="#L-85"><span class="linenos"> 85</span></a><span class="k">class</span> <span class="nc">BertOnlyNSPHead</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+</span><span id="L-86"><a href="#L-86"><span class="linenos"> 86</span></a>    <span class="sd">&quot;&quot;&quot; Bert Head for the Next Sentence Prediction task of Bert</span>
+</span><span id="L-87"><a href="#L-87"><span class="linenos"> 87</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="L-88"><a href="#L-88"><span class="linenos"> 88</span></a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">):</span>
+</span><span id="L-89"><a href="#L-89"><span class="linenos"> 89</span></a>        <span class="sd">&quot;&quot;&quot; constructs a `BertOnlyNSPHead`</span>
+</span><span id="L-90"><a href="#L-90"><span class="linenos"> 90</span></a><span class="sd">        </span>
+</span><span id="L-91"><a href="#L-91"><span class="linenos"> 91</span></a><span class="sd">        Args:</span>
+</span><span id="L-92"><a href="#L-92"><span class="linenos"> 92</span></a><span class="sd">            config: a `BertConfig`</span>
+</span><span id="L-93"><a href="#L-93"><span class="linenos"> 93</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="L-94"><a href="#L-94"><span class="linenos"> 94</span></a>        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+</span><span id="L-95"><a href="#L-95"><span class="linenos"> 95</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">seq_relationship</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+</span><span id="L-96"><a href="#L-96"><span class="linenos"> 96</span></a>
+</span><span id="L-97"><a href="#L-97"><span class="linenos"> 97</span></a>    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pooled_output</span><span class="p">):</span>
+</span><span id="L-98"><a href="#L-98"><span class="linenos"> 98</span></a>        <span class="sd">&quot;&quot;&quot; Forward pass through the module</span>
+</span><span id="L-99"><a href="#L-99"><span class="linenos"> 99</span></a><span class="sd">        </span>
+</span><span id="L-100"><a href="#L-100"><span class="linenos">100</span></a><span class="sd">        Returns:</span>
+</span><span id="L-101"><a href="#L-101"><span class="linenos">101</span></a><span class="sd">            seq_relationship_score: a torch.Tensor of size [batch_size, 2], score for prediction of next sentence</span>
+</span><span id="L-102"><a href="#L-102"><span class="linenos">102</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="L-103"><a href="#L-103"><span class="linenos">103</span></a>        <span class="n">seq_relationship_score</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">seq_relationship</span><span class="p">(</span><span class="n">pooled_output</span><span class="p">)</span>
+</span><span id="L-104"><a href="#L-104"><span class="linenos">104</span></a>        <span class="k">return</span> <span class="n">seq_relationship_score</span>
+</span><span id="L-105"><a href="#L-105"><span class="linenos">105</span></a>
+</span><span id="L-106"><a href="#L-106"><span class="linenos">106</span></a><span class="k">class</span> <span class="nc">ErnieEntPredictionHead</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+</span><span id="L-107"><a href="#L-107"><span class="linenos">107</span></a>    <span class="sd">&quot;&quot;&quot; Ernie Head for predicting entities</span>
+</span><span id="L-108"><a href="#L-108"><span class="linenos">108</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="L-109"><a href="#L-109"><span class="linenos">109</span></a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">):</span>
+</span><span id="L-110"><a href="#L-110"><span class="linenos">110</span></a>        <span class="sd">&quot;&quot;&quot; constructs a `ErnieEntPredictionHead`</span>
+</span><span id="L-111"><a href="#L-111"><span class="linenos">111</span></a><span class="sd">        </span>
+</span><span id="L-112"><a href="#L-112"><span class="linenos">112</span></a><span class="sd">        Args:</span>
+</span><span id="L-113"><a href="#L-113"><span class="linenos">113</span></a><span class="sd">            config: a `BertConfig`</span>
+</span><span id="L-114"><a href="#L-114"><span class="linenos">114</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="L-115"><a href="#L-115"><span class="linenos">115</span></a>        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+</span><span id="L-116"><a href="#L-116"><span class="linenos">116</span></a>        <span class="n">config_ent</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+</span><span id="L-117"><a href="#L-117"><span class="linenos">117</span></a>        <span class="c1">#Replace the hidden_size by the entity size for the Bert head to have the correct dimension</span>
+</span><span id="L-118"><a href="#L-118"><span class="linenos">118</span></a>        <span class="n">config_ent</span><span class="o">.</span><span class="n">hidden_size</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">ent</span><span class="o">.</span><span class="n">entity_size</span>
+</span><span id="L-119"><a href="#L-119"><span class="linenos">119</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">transform</span> <span class="o">=</span> <span class="n">BertPredictionHeadTransform</span><span class="p">(</span><span class="n">config_ent</span><span class="p">)</span>
+</span><span id="L-120"><a href="#L-120"><span class="linenos">120</span></a>
+</span><span id="L-121"><a href="#L-121"><span class="linenos">121</span></a>    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hidden_states</span><span class="p">,</span> <span class="n">candidate</span><span class="p">):</span>
+</span><span id="L-122"><a href="#L-122"><span class="linenos">122</span></a>        <span class="sd">&quot;&quot;&quot; Forward pass through the module</span>
+</span><span id="L-123"><a href="#L-123"><span class="linenos">123</span></a><span class="sd">        </span>
+</span><span id="L-124"><a href="#L-124"><span class="linenos">124</span></a><span class="sd">        Returns:</span>
+</span><span id="L-125"><a href="#L-125"><span class="linenos">125</span></a><span class="sd">            seq_relationship_score: a torch.Tensor of size [batch_size, seq_length, no_of_entity_in_batch], predicted entities</span>
+</span><span id="L-126"><a href="#L-126"><span class="linenos">126</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="L-127"><a href="#L-127"><span class="linenos">127</span></a>        <span class="n">hidden_states</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">hidden_states</span><span class="p">)</span>
+</span><span id="L-128"><a href="#L-128"><span class="linenos">128</span></a>        <span class="n">candidate</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="n">candidate</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+</span><span id="L-129"><a href="#L-129"><span class="linenos">129</span></a>        <span class="c1"># hidden_states [batch_size, max_seq, dim]</span>
+</span><span id="L-130"><a href="#L-130"><span class="linenos">130</span></a>        <span class="c1"># candidate [entity_num_in_the_batch, dim]</span>
+</span><span id="L-131"><a href="#L-131"><span class="linenos">131</span></a>        <span class="c1"># return [batch_size, max_seq, entity_num_in_the_batch]</span>
+</span><span id="L-132"><a href="#L-132"><span class="linenos">132</span></a>        <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">matmul</span><span class="p">(</span><span class="n">hidden_states</span><span class="p">,</span> <span class="n">candidate</span><span class="o">.</span><span class="n">t</span><span class="p">())</span>
+</span><span id="L-133"><a href="#L-133"><span class="linenos">133</span></a>
+</span><span id="L-134"><a href="#L-134"><span class="linenos">134</span></a><span class="k">class</span> <span class="nc">ErniePreTrainingHeads</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+</span><span id="L-135"><a href="#L-135"><span class="linenos">135</span></a>    <span class="sd">&quot;&quot;&quot;Heads for Ernie Pretraining</span>
+</span><span id="L-136"><a href="#L-136"><span class="linenos">136</span></a>
+</span><span id="L-137"><a href="#L-137"><span class="linenos">137</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="L-138"><a href="#L-138"><span class="linenos">138</span></a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">,</span> <span class="n">bert_model_embedding_weights</span><span class="p">):</span>
+</span><span id="L-139"><a href="#L-139"><span class="linenos">139</span></a>        <span class="sd">&quot;&quot;&quot; constructs `ErniePreTrainingHeads`</span>
+</span><span id="L-140"><a href="#L-140"><span class="linenos">140</span></a><span class="sd">        </span>
+</span><span id="L-141"><a href="#L-141"><span class="linenos">141</span></a><span class="sd">        Args:</span>
+</span><span id="L-142"><a href="#L-142"><span class="linenos">142</span></a><span class="sd">            config: a `BertConfig`</span>
+</span><span id="L-143"><a href="#L-143"><span class="linenos">143</span></a><span class="sd">            `bert_model_embedding_weights`:  torch.Tensor of size [hidden_size, vocab_size], the weights of the input embeddings of bert/ernie</span>
+</span><span id="L-144"><a href="#L-144"><span class="linenos">144</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="L-145"><a href="#L-145"><span class="linenos">145</span></a>        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+</span><span id="L-146"><a href="#L-146"><span class="linenos">146</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">predictions</span> <span class="o">=</span> <span class="n">BertLMPredictionHead</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">bert_model_embedding_weights</span><span class="p">)</span>
+</span><span id="L-147"><a href="#L-147"><span class="linenos">147</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">predictions_ent</span> <span class="o">=</span> <span class="n">BertEntPredictionHead</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+</span><span id="L-148"><a href="#L-148"><span class="linenos">148</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">seq_relationship</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+</span><span id="L-149"><a href="#L-149"><span class="linenos">149</span></a>
+</span><span id="L-150"><a href="#L-150"><span class="linenos">150</span></a>    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sequence_output</span><span class="p">,</span> <span class="n">pooled_output</span><span class="p">,</span> <span class="n">candidate</span><span class="p">):</span>
+</span><span id="L-151"><a href="#L-151"><span class="linenos">151</span></a>        <span class="sd">&quot;&quot;&quot;forward pass through the module</span>
+</span><span id="L-152"><a href="#L-152"><span class="linenos">152</span></a><span class="sd">        </span>
+</span><span id="L-153"><a href="#L-153"><span class="linenos">153</span></a><span class="sd">        Returns:</span>
+</span><span id="L-154"><a href="#L-154"><span class="linenos">154</span></a><span class="sd">            prediction_scores: token prediction score </span>
+</span><span id="L-155"><a href="#L-155"><span class="linenos">155</span></a><span class="sd">            seq_relationship_score: next sentence prediction score</span>
+</span><span id="L-156"><a href="#L-156"><span class="linenos">156</span></a><span class="sd">            prediction_scores_ent: entity prediction score</span>
+</span><span id="L-157"><a href="#L-157"><span class="linenos">157</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="L-158"><a href="#L-158"><span class="linenos">158</span></a>        <span class="n">prediction_scores</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">predictions</span><span class="p">(</span><span class="n">sequence_output</span><span class="p">)</span>
+</span><span id="L-159"><a href="#L-159"><span class="linenos">159</span></a>        <span class="n">seq_relationship_score</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">seq_relationship</span><span class="p">(</span><span class="n">pooled_output</span><span class="p">)</span>
+</span><span id="L-160"><a href="#L-160"><span class="linenos">160</span></a>        <span class="n">prediction_scores_ent</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">predictions_ent</span><span class="p">(</span><span class="n">sequence_output</span><span class="p">,</span> <span class="n">candidate</span><span class="p">)</span>
+</span><span id="L-161"><a href="#L-161"><span class="linenos">161</span></a>        <span class="k">return</span> <span class="n">prediction_scores</span><span class="p">,</span> <span class="n">seq_relationship_score</span><span class="p">,</span> <span class="n">prediction_scores_ent</span>
 </span></pre></div>
 
 
@@ -223,59 +300,39 @@
     </div>
     <a class="headerlink" href="#BertLMPredictionHead"></a>
             <div class="pdoc-code codehilite"><pre><span></span><span id="BertLMPredictionHead-8"><a href="#BertLMPredictionHead-8"><span class="linenos"> 8</span></a><span class="k">class</span> <span class="nc">BertLMPredictionHead</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
-</span><span id="BertLMPredictionHead-9"><a href="#BertLMPredictionHead-9"><span class="linenos"> 9</span></a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">,</span> <span class="n">bert_model_embedding_weights</span><span class="p">):</span>
-</span><span id="BertLMPredictionHead-10"><a href="#BertLMPredictionHead-10"><span class="linenos">10</span></a>        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
-</span><span id="BertLMPredictionHead-11"><a href="#BertLMPredictionHead-11"><span class="linenos">11</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">transform</span> <span class="o">=</span> <span class="n">BertPredictionHeadTransform</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
-</span><span id="BertLMPredictionHead-12"><a href="#BertLMPredictionHead-12"><span class="linenos">12</span></a>
-</span><span id="BertLMPredictionHead-13"><a href="#BertLMPredictionHead-13"><span class="linenos">13</span></a>        <span class="c1"># The output weights are the same as the input embeddings, but there is</span>
-</span><span id="BertLMPredictionHead-14"><a href="#BertLMPredictionHead-14"><span class="linenos">14</span></a>        <span class="c1"># an output-only bias for each token.</span>
-</span><span id="BertLMPredictionHead-15"><a href="#BertLMPredictionHead-15"><span class="linenos">15</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">decoder</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">bert_model_embedding_weights</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span>
-</span><span id="BertLMPredictionHead-16"><a href="#BertLMPredictionHead-16"><span class="linenos">16</span></a>                                 <span class="n">bert_model_embedding_weights</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span>
-</span><span id="BertLMPredictionHead-17"><a href="#BertLMPredictionHead-17"><span class="linenos">17</span></a>                                 <span class="n">bias</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-</span><span id="BertLMPredictionHead-18"><a href="#BertLMPredictionHead-18"><span class="linenos">18</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">decoder</span><span class="o">.</span><span class="n">weight</span> <span class="o">=</span> <span class="n">bert_model_embedding_weights</span>
-</span><span id="BertLMPredictionHead-19"><a href="#BertLMPredictionHead-19"><span class="linenos">19</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">bias</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Parameter</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">bert_model_embedding_weights</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="mi">0</span><span class="p">)))</span>
+</span><span id="BertLMPredictionHead-9"><a href="#BertLMPredictionHead-9"><span class="linenos"> 9</span></a>    <span class="sd">&quot;&quot;&quot; Bert Head for using Bert as a predictive Language Model </span>
+</span><span id="BertLMPredictionHead-10"><a href="#BertLMPredictionHead-10"><span class="linenos">10</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="BertLMPredictionHead-11"><a href="#BertLMPredictionHead-11"><span class="linenos">11</span></a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">,</span> <span class="n">bert_model_embedding_weights</span><span class="p">):</span>
+</span><span id="BertLMPredictionHead-12"><a href="#BertLMPredictionHead-12"><span class="linenos">12</span></a>        <span class="sd">&quot;&quot;&quot; constructs a `BertLMPredictionHead`</span>
+</span><span id="BertLMPredictionHead-13"><a href="#BertLMPredictionHead-13"><span class="linenos">13</span></a><span class="sd">        </span>
+</span><span id="BertLMPredictionHead-14"><a href="#BertLMPredictionHead-14"><span class="linenos">14</span></a><span class="sd">        Args:</span>
+</span><span id="BertLMPredictionHead-15"><a href="#BertLMPredictionHead-15"><span class="linenos">15</span></a><span class="sd">            config: a `BertConfig``</span>
+</span><span id="BertLMPredictionHead-16"><a href="#BertLMPredictionHead-16"><span class="linenos">16</span></a><span class="sd">            `bert_model_embedding_weights`:  torch.Tensor of size [hidden_size, vocab_size], the weights of the input embeddings of bert</span>
+</span><span id="BertLMPredictionHead-17"><a href="#BertLMPredictionHead-17"><span class="linenos">17</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="BertLMPredictionHead-18"><a href="#BertLMPredictionHead-18"><span class="linenos">18</span></a>        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+</span><span id="BertLMPredictionHead-19"><a href="#BertLMPredictionHead-19"><span class="linenos">19</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">transform</span> <span class="o">=</span> <span class="n">BertPredictionHeadTransform</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
 </span><span id="BertLMPredictionHead-20"><a href="#BertLMPredictionHead-20"><span class="linenos">20</span></a>
-</span><span id="BertLMPredictionHead-21"><a href="#BertLMPredictionHead-21"><span class="linenos">21</span></a>    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hidden_states</span><span class="p">):</span>
-</span><span id="BertLMPredictionHead-22"><a href="#BertLMPredictionHead-22"><span class="linenos">22</span></a>        <span class="n">hidden_states</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">hidden_states</span><span class="p">)</span>
-</span><span id="BertLMPredictionHead-23"><a href="#BertLMPredictionHead-23"><span class="linenos">23</span></a>        <span class="n">hidden_states</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">decoder</span><span class="p">(</span><span class="n">hidden_states</span><span class="p">)</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">bias</span>
-</span><span id="BertLMPredictionHead-24"><a href="#BertLMPredictionHead-24"><span class="linenos">24</span></a>        <span class="k">return</span> <span class="n">hidden_states</span>
+</span><span id="BertLMPredictionHead-21"><a href="#BertLMPredictionHead-21"><span class="linenos">21</span></a>        <span class="c1"># The output weights are the same as the input embeddings, but there is</span>
+</span><span id="BertLMPredictionHead-22"><a href="#BertLMPredictionHead-22"><span class="linenos">22</span></a>        <span class="c1"># an output-only bias for each token.</span>
+</span><span id="BertLMPredictionHead-23"><a href="#BertLMPredictionHead-23"><span class="linenos">23</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">decoder</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">bert_model_embedding_weights</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span>
+</span><span id="BertLMPredictionHead-24"><a href="#BertLMPredictionHead-24"><span class="linenos">24</span></a>                                 <span class="n">bert_model_embedding_weights</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span>
+</span><span id="BertLMPredictionHead-25"><a href="#BertLMPredictionHead-25"><span class="linenos">25</span></a>                                 <span class="n">bias</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+</span><span id="BertLMPredictionHead-26"><a href="#BertLMPredictionHead-26"><span class="linenos">26</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">decoder</span><span class="o">.</span><span class="n">weight</span> <span class="o">=</span> <span class="n">bert_model_embedding_weights</span>
+</span><span id="BertLMPredictionHead-27"><a href="#BertLMPredictionHead-27"><span class="linenos">27</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">bias</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Parameter</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">bert_model_embedding_weights</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="mi">0</span><span class="p">)))</span>
+</span><span id="BertLMPredictionHead-28"><a href="#BertLMPredictionHead-28"><span class="linenos">28</span></a>
+</span><span id="BertLMPredictionHead-29"><a href="#BertLMPredictionHead-29"><span class="linenos">29</span></a>    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hidden_states</span><span class="p">):</span>
+</span><span id="BertLMPredictionHead-30"><a href="#BertLMPredictionHead-30"><span class="linenos">30</span></a>        <span class="sd">&quot;&quot;&quot;Forward pass through the module</span>
+</span><span id="BertLMPredictionHead-31"><a href="#BertLMPredictionHead-31"><span class="linenos">31</span></a><span class="sd">        </span>
+</span><span id="BertLMPredictionHead-32"><a href="#BertLMPredictionHead-32"><span class="linenos">32</span></a><span class="sd">        Returns:</span>
+</span><span id="BertLMPredictionHead-33"><a href="#BertLMPredictionHead-33"><span class="linenos">33</span></a><span class="sd">            hidden_states: torch.Tensor of size [batch_size, seq_length, vocab_size], output representations</span>
+</span><span id="BertLMPredictionHead-34"><a href="#BertLMPredictionHead-34"><span class="linenos">34</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="BertLMPredictionHead-35"><a href="#BertLMPredictionHead-35"><span class="linenos">35</span></a>        <span class="n">hidden_states</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">hidden_states</span><span class="p">)</span>
+</span><span id="BertLMPredictionHead-36"><a href="#BertLMPredictionHead-36"><span class="linenos">36</span></a>        <span class="n">hidden_states</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">decoder</span><span class="p">(</span><span class="n">hidden_states</span><span class="p">)</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">bias</span>
+</span><span id="BertLMPredictionHead-37"><a href="#BertLMPredictionHead-37"><span class="linenos">37</span></a>        <span class="k">return</span> <span class="n">hidden_states</span>
 </span></pre></div>
 
 
-            <div class="docstring"><p>Base class for all neural network modules.</p>
-
-<p>Your models should also subclass this class.</p>
-
-<p>Modules can also contain other Modules, allowing to nest them in
-a tree structure. You can assign the submodules as regular attributes::</p>
-
-<pre><code>import torch.nn as nn
-import torch.nn.functional as F
-
-class Model(nn.Module):
-    def __init__(self):
-        super().__init__()
-        self.conv1 = nn.Conv2d(1, 20, 5)
-        self.conv2 = nn.Conv2d(20, 20, 5)
-
-    def forward(self, x):
-        x = F.relu(self.conv1(x))
-        return F.relu(self.conv2(x))
-</code></pre>
-
-<p>Submodules assigned in this way will be registered, and will have their
-parameters converted too when you call <code><a href="#BertLMPredictionHead.to">to</a></code>, etc.</p>
-
-<div class="pdoc-alert pdoc-alert-note">
-
-<p>As per the example above, an <code><a href="#BertLMPredictionHead.__init__">__init__()</a></code> call to the parent class
-must be made before assignment on the child.</p>
-
-</div>
-
-<p>:ivar training: Boolean represents whether this module is in training or
-                evaluation mode.
-:vartype training: bool</p>
+            <div class="docstring"><p>Bert Head for using Bert as a predictive Language Model</p>
 </div>
 
 
@@ -289,21 +346,34 @@ must be made before assignment on the child.</p>
 
     </div>
     <a class="headerlink" href="#BertLMPredictionHead.__init__"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="BertLMPredictionHead.__init__-9"><a href="#BertLMPredictionHead.__init__-9"><span class="linenos"> 9</span></a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">,</span> <span class="n">bert_model_embedding_weights</span><span class="p">):</span>
-</span><span id="BertLMPredictionHead.__init__-10"><a href="#BertLMPredictionHead.__init__-10"><span class="linenos">10</span></a>        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
-</span><span id="BertLMPredictionHead.__init__-11"><a href="#BertLMPredictionHead.__init__-11"><span class="linenos">11</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">transform</span> <span class="o">=</span> <span class="n">BertPredictionHeadTransform</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
-</span><span id="BertLMPredictionHead.__init__-12"><a href="#BertLMPredictionHead.__init__-12"><span class="linenos">12</span></a>
-</span><span id="BertLMPredictionHead.__init__-13"><a href="#BertLMPredictionHead.__init__-13"><span class="linenos">13</span></a>        <span class="c1"># The output weights are the same as the input embeddings, but there is</span>
-</span><span id="BertLMPredictionHead.__init__-14"><a href="#BertLMPredictionHead.__init__-14"><span class="linenos">14</span></a>        <span class="c1"># an output-only bias for each token.</span>
-</span><span id="BertLMPredictionHead.__init__-15"><a href="#BertLMPredictionHead.__init__-15"><span class="linenos">15</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">decoder</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">bert_model_embedding_weights</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span>
-</span><span id="BertLMPredictionHead.__init__-16"><a href="#BertLMPredictionHead.__init__-16"><span class="linenos">16</span></a>                                 <span class="n">bert_model_embedding_weights</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span>
-</span><span id="BertLMPredictionHead.__init__-17"><a href="#BertLMPredictionHead.__init__-17"><span class="linenos">17</span></a>                                 <span class="n">bias</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-</span><span id="BertLMPredictionHead.__init__-18"><a href="#BertLMPredictionHead.__init__-18"><span class="linenos">18</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">decoder</span><span class="o">.</span><span class="n">weight</span> <span class="o">=</span> <span class="n">bert_model_embedding_weights</span>
-</span><span id="BertLMPredictionHead.__init__-19"><a href="#BertLMPredictionHead.__init__-19"><span class="linenos">19</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">bias</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Parameter</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">bert_model_embedding_weights</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="mi">0</span><span class="p">)))</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="BertLMPredictionHead.__init__-11"><a href="#BertLMPredictionHead.__init__-11"><span class="linenos">11</span></a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">,</span> <span class="n">bert_model_embedding_weights</span><span class="p">):</span>
+</span><span id="BertLMPredictionHead.__init__-12"><a href="#BertLMPredictionHead.__init__-12"><span class="linenos">12</span></a>        <span class="sd">&quot;&quot;&quot; constructs a `BertLMPredictionHead`</span>
+</span><span id="BertLMPredictionHead.__init__-13"><a href="#BertLMPredictionHead.__init__-13"><span class="linenos">13</span></a><span class="sd">        </span>
+</span><span id="BertLMPredictionHead.__init__-14"><a href="#BertLMPredictionHead.__init__-14"><span class="linenos">14</span></a><span class="sd">        Args:</span>
+</span><span id="BertLMPredictionHead.__init__-15"><a href="#BertLMPredictionHead.__init__-15"><span class="linenos">15</span></a><span class="sd">            config: a `BertConfig``</span>
+</span><span id="BertLMPredictionHead.__init__-16"><a href="#BertLMPredictionHead.__init__-16"><span class="linenos">16</span></a><span class="sd">            `bert_model_embedding_weights`:  torch.Tensor of size [hidden_size, vocab_size], the weights of the input embeddings of bert</span>
+</span><span id="BertLMPredictionHead.__init__-17"><a href="#BertLMPredictionHead.__init__-17"><span class="linenos">17</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="BertLMPredictionHead.__init__-18"><a href="#BertLMPredictionHead.__init__-18"><span class="linenos">18</span></a>        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+</span><span id="BertLMPredictionHead.__init__-19"><a href="#BertLMPredictionHead.__init__-19"><span class="linenos">19</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">transform</span> <span class="o">=</span> <span class="n">BertPredictionHeadTransform</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+</span><span id="BertLMPredictionHead.__init__-20"><a href="#BertLMPredictionHead.__init__-20"><span class="linenos">20</span></a>
+</span><span id="BertLMPredictionHead.__init__-21"><a href="#BertLMPredictionHead.__init__-21"><span class="linenos">21</span></a>        <span class="c1"># The output weights are the same as the input embeddings, but there is</span>
+</span><span id="BertLMPredictionHead.__init__-22"><a href="#BertLMPredictionHead.__init__-22"><span class="linenos">22</span></a>        <span class="c1"># an output-only bias for each token.</span>
+</span><span id="BertLMPredictionHead.__init__-23"><a href="#BertLMPredictionHead.__init__-23"><span class="linenos">23</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">decoder</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">bert_model_embedding_weights</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span>
+</span><span id="BertLMPredictionHead.__init__-24"><a href="#BertLMPredictionHead.__init__-24"><span class="linenos">24</span></a>                                 <span class="n">bert_model_embedding_weights</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span>
+</span><span id="BertLMPredictionHead.__init__-25"><a href="#BertLMPredictionHead.__init__-25"><span class="linenos">25</span></a>                                 <span class="n">bias</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+</span><span id="BertLMPredictionHead.__init__-26"><a href="#BertLMPredictionHead.__init__-26"><span class="linenos">26</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">decoder</span><span class="o">.</span><span class="n">weight</span> <span class="o">=</span> <span class="n">bert_model_embedding_weights</span>
+</span><span id="BertLMPredictionHead.__init__-27"><a href="#BertLMPredictionHead.__init__-27"><span class="linenos">27</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">bias</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Parameter</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">bert_model_embedding_weights</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="mi">0</span><span class="p">)))</span>
 </span></pre></div>
 
 
-            <div class="docstring"><p>Initializes internal Module state, shared by both nn.Module and ScriptModule.</p>
+            <div class="docstring"><p>constructs a <code><a href="#BertLMPredictionHead">BertLMPredictionHead</a></code></p>
+
+<h6 id="args">Args</h6>
+
+<ul>
+<li><strong>config:</strong>  a `BertConfig``</li>
+<li><strong><code>bert_model_embedding_weights</code>:</strong>   torch.Tensor of size [hidden_size, vocab_size], the weights of the input embeddings of bert</li>
+</ul>
 </div>
 
 
@@ -319,25 +389,25 @@ must be made before assignment on the child.</p>
 
     </div>
     <a class="headerlink" href="#BertLMPredictionHead.forward"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="BertLMPredictionHead.forward-21"><a href="#BertLMPredictionHead.forward-21"><span class="linenos">21</span></a>    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hidden_states</span><span class="p">):</span>
-</span><span id="BertLMPredictionHead.forward-22"><a href="#BertLMPredictionHead.forward-22"><span class="linenos">22</span></a>        <span class="n">hidden_states</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">hidden_states</span><span class="p">)</span>
-</span><span id="BertLMPredictionHead.forward-23"><a href="#BertLMPredictionHead.forward-23"><span class="linenos">23</span></a>        <span class="n">hidden_states</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">decoder</span><span class="p">(</span><span class="n">hidden_states</span><span class="p">)</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">bias</span>
-</span><span id="BertLMPredictionHead.forward-24"><a href="#BertLMPredictionHead.forward-24"><span class="linenos">24</span></a>        <span class="k">return</span> <span class="n">hidden_states</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="BertLMPredictionHead.forward-29"><a href="#BertLMPredictionHead.forward-29"><span class="linenos">29</span></a>    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hidden_states</span><span class="p">):</span>
+</span><span id="BertLMPredictionHead.forward-30"><a href="#BertLMPredictionHead.forward-30"><span class="linenos">30</span></a>        <span class="sd">&quot;&quot;&quot;Forward pass through the module</span>
+</span><span id="BertLMPredictionHead.forward-31"><a href="#BertLMPredictionHead.forward-31"><span class="linenos">31</span></a><span class="sd">        </span>
+</span><span id="BertLMPredictionHead.forward-32"><a href="#BertLMPredictionHead.forward-32"><span class="linenos">32</span></a><span class="sd">        Returns:</span>
+</span><span id="BertLMPredictionHead.forward-33"><a href="#BertLMPredictionHead.forward-33"><span class="linenos">33</span></a><span class="sd">            hidden_states: torch.Tensor of size [batch_size, seq_length, vocab_size], output representations</span>
+</span><span id="BertLMPredictionHead.forward-34"><a href="#BertLMPredictionHead.forward-34"><span class="linenos">34</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="BertLMPredictionHead.forward-35"><a href="#BertLMPredictionHead.forward-35"><span class="linenos">35</span></a>        <span class="n">hidden_states</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">hidden_states</span><span class="p">)</span>
+</span><span id="BertLMPredictionHead.forward-36"><a href="#BertLMPredictionHead.forward-36"><span class="linenos">36</span></a>        <span class="n">hidden_states</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">decoder</span><span class="p">(</span><span class="n">hidden_states</span><span class="p">)</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">bias</span>
+</span><span id="BertLMPredictionHead.forward-37"><a href="#BertLMPredictionHead.forward-37"><span class="linenos">37</span></a>        <span class="k">return</span> <span class="n">hidden_states</span>
 </span></pre></div>
 
 
-            <div class="docstring"><p>Defines the computation performed at every call.</p>
+            <div class="docstring"><p>Forward pass through the module</p>
 
-<p>Should be overridden by all subclasses.</p>
+<h6 id="returns">Returns</h6>
 
-<div class="pdoc-alert pdoc-alert-note">
-
-<p>Although the recipe for forward pass needs to be defined within
-this function, one should call the <code>Module</code> instance afterwards
-instead of this since the former takes care of running the
-registered hooks while the latter silently ignores them.</p>
-
-</div>
+<blockquote>
+  <p>hidden_states: torch.Tensor of size [batch_size, seq_length, vocab_size], output representations</p>
+</blockquote>
 </div>
 
 
@@ -404,51 +474,31 @@ registered hooks while the latter silently ignores them.</p>
 
     </div>
     <a class="headerlink" href="#BertOnlyMLMHead"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="BertOnlyMLMHead-26"><a href="#BertOnlyMLMHead-26"><span class="linenos">26</span></a><span class="k">class</span> <span class="nc">BertOnlyMLMHead</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
-</span><span id="BertOnlyMLMHead-27"><a href="#BertOnlyMLMHead-27"><span class="linenos">27</span></a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">,</span> <span class="n">bert_model_embedding_weights</span><span class="p">):</span>
-</span><span id="BertOnlyMLMHead-28"><a href="#BertOnlyMLMHead-28"><span class="linenos">28</span></a>        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
-</span><span id="BertOnlyMLMHead-29"><a href="#BertOnlyMLMHead-29"><span class="linenos">29</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">predictions</span> <span class="o">=</span> <span class="n">BertLMPredictionHead</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">bert_model_embedding_weights</span><span class="p">)</span>
-</span><span id="BertOnlyMLMHead-30"><a href="#BertOnlyMLMHead-30"><span class="linenos">30</span></a>
-</span><span id="BertOnlyMLMHead-31"><a href="#BertOnlyMLMHead-31"><span class="linenos">31</span></a>    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sequence_output</span><span class="p">):</span>
-</span><span id="BertOnlyMLMHead-32"><a href="#BertOnlyMLMHead-32"><span class="linenos">32</span></a>        <span class="n">prediction_scores</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">predictions</span><span class="p">(</span><span class="n">sequence_output</span><span class="p">)</span>
-</span><span id="BertOnlyMLMHead-33"><a href="#BertOnlyMLMHead-33"><span class="linenos">33</span></a>        <span class="k">return</span> <span class="n">prediction_scores</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="BertOnlyMLMHead-39"><a href="#BertOnlyMLMHead-39"><span class="linenos">39</span></a><span class="k">class</span> <span class="nc">BertOnlyMLMHead</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+</span><span id="BertOnlyMLMHead-40"><a href="#BertOnlyMLMHead-40"><span class="linenos">40</span></a>    <span class="sd">&quot;&quot;&quot; Bert Head for the Masked Language Modeling Pre-training task of Bert</span>
+</span><span id="BertOnlyMLMHead-41"><a href="#BertOnlyMLMHead-41"><span class="linenos">41</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="BertOnlyMLMHead-42"><a href="#BertOnlyMLMHead-42"><span class="linenos">42</span></a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">,</span> <span class="n">bert_model_embedding_weights</span><span class="p">):</span>
+</span><span id="BertOnlyMLMHead-43"><a href="#BertOnlyMLMHead-43"><span class="linenos">43</span></a>        <span class="sd">&quot;&quot;&quot; constructs a `BertOnlyMLMHead`</span>
+</span><span id="BertOnlyMLMHead-44"><a href="#BertOnlyMLMHead-44"><span class="linenos">44</span></a><span class="sd">        </span>
+</span><span id="BertOnlyMLMHead-45"><a href="#BertOnlyMLMHead-45"><span class="linenos">45</span></a><span class="sd">        Args:</span>
+</span><span id="BertOnlyMLMHead-46"><a href="#BertOnlyMLMHead-46"><span class="linenos">46</span></a><span class="sd">            config: a `BertConfig`</span>
+</span><span id="BertOnlyMLMHead-47"><a href="#BertOnlyMLMHead-47"><span class="linenos">47</span></a><span class="sd">            `bert_model_embedding_weights`:  torch.Tensor of size [hidden_size, vocab_size], the weights of the input embeddings of bert</span>
+</span><span id="BertOnlyMLMHead-48"><a href="#BertOnlyMLMHead-48"><span class="linenos">48</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="BertOnlyMLMHead-49"><a href="#BertOnlyMLMHead-49"><span class="linenos">49</span></a>        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+</span><span id="BertOnlyMLMHead-50"><a href="#BertOnlyMLMHead-50"><span class="linenos">50</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">predictions</span> <span class="o">=</span> <span class="n">BertLMPredictionHead</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">bert_model_embedding_weights</span><span class="p">)</span>
+</span><span id="BertOnlyMLMHead-51"><a href="#BertOnlyMLMHead-51"><span class="linenos">51</span></a>
+</span><span id="BertOnlyMLMHead-52"><a href="#BertOnlyMLMHead-52"><span class="linenos">52</span></a>    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sequence_output</span><span class="p">):</span>
+</span><span id="BertOnlyMLMHead-53"><a href="#BertOnlyMLMHead-53"><span class="linenos">53</span></a>        <span class="sd">&quot;&quot;&quot;Forward pass through the module</span>
+</span><span id="BertOnlyMLMHead-54"><a href="#BertOnlyMLMHead-54"><span class="linenos">54</span></a><span class="sd">        </span>
+</span><span id="BertOnlyMLMHead-55"><a href="#BertOnlyMLMHead-55"><span class="linenos">55</span></a><span class="sd">        Returns:</span>
+</span><span id="BertOnlyMLMHead-56"><a href="#BertOnlyMLMHead-56"><span class="linenos">56</span></a><span class="sd">            hidden_states: torch.Tensor of size [batch_size, seq_length, vocab_size], output representations</span>
+</span><span id="BertOnlyMLMHead-57"><a href="#BertOnlyMLMHead-57"><span class="linenos">57</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="BertOnlyMLMHead-58"><a href="#BertOnlyMLMHead-58"><span class="linenos">58</span></a>        <span class="n">prediction_scores</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">predictions</span><span class="p">(</span><span class="n">sequence_output</span><span class="p">)</span>
+</span><span id="BertOnlyMLMHead-59"><a href="#BertOnlyMLMHead-59"><span class="linenos">59</span></a>        <span class="k">return</span> <span class="n">prediction_scores</span>
 </span></pre></div>
 
 
-            <div class="docstring"><p>Base class for all neural network modules.</p>
-
-<p>Your models should also subclass this class.</p>
-
-<p>Modules can also contain other Modules, allowing to nest them in
-a tree structure. You can assign the submodules as regular attributes::</p>
-
-<pre><code>import torch.nn as nn
-import torch.nn.functional as F
-
-class Model(nn.Module):
-    def __init__(self):
-        super().__init__()
-        self.conv1 = nn.Conv2d(1, 20, 5)
-        self.conv2 = nn.Conv2d(20, 20, 5)
-
-    def forward(self, x):
-        x = F.relu(self.conv1(x))
-        return F.relu(self.conv2(x))
-</code></pre>
-
-<p>Submodules assigned in this way will be registered, and will have their
-parameters converted too when you call <code><a href="#BertOnlyMLMHead.to">to</a></code>, etc.</p>
-
-<div class="pdoc-alert pdoc-alert-note">
-
-<p>As per the example above, an <code><a href="#BertOnlyMLMHead.__init__">__init__()</a></code> call to the parent class
-must be made before assignment on the child.</p>
-
-</div>
-
-<p>:ivar training: Boolean represents whether this module is in training or
-                evaluation mode.
-:vartype training: bool</p>
+            <div class="docstring"><p>Bert Head for the Masked Language Modeling Pre-training task of Bert</p>
 </div>
 
 
@@ -462,13 +512,26 @@ must be made before assignment on the child.</p>
 
     </div>
     <a class="headerlink" href="#BertOnlyMLMHead.__init__"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="BertOnlyMLMHead.__init__-27"><a href="#BertOnlyMLMHead.__init__-27"><span class="linenos">27</span></a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">,</span> <span class="n">bert_model_embedding_weights</span><span class="p">):</span>
-</span><span id="BertOnlyMLMHead.__init__-28"><a href="#BertOnlyMLMHead.__init__-28"><span class="linenos">28</span></a>        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
-</span><span id="BertOnlyMLMHead.__init__-29"><a href="#BertOnlyMLMHead.__init__-29"><span class="linenos">29</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">predictions</span> <span class="o">=</span> <span class="n">BertLMPredictionHead</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">bert_model_embedding_weights</span><span class="p">)</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="BertOnlyMLMHead.__init__-42"><a href="#BertOnlyMLMHead.__init__-42"><span class="linenos">42</span></a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">,</span> <span class="n">bert_model_embedding_weights</span><span class="p">):</span>
+</span><span id="BertOnlyMLMHead.__init__-43"><a href="#BertOnlyMLMHead.__init__-43"><span class="linenos">43</span></a>        <span class="sd">&quot;&quot;&quot; constructs a `BertOnlyMLMHead`</span>
+</span><span id="BertOnlyMLMHead.__init__-44"><a href="#BertOnlyMLMHead.__init__-44"><span class="linenos">44</span></a><span class="sd">        </span>
+</span><span id="BertOnlyMLMHead.__init__-45"><a href="#BertOnlyMLMHead.__init__-45"><span class="linenos">45</span></a><span class="sd">        Args:</span>
+</span><span id="BertOnlyMLMHead.__init__-46"><a href="#BertOnlyMLMHead.__init__-46"><span class="linenos">46</span></a><span class="sd">            config: a `BertConfig`</span>
+</span><span id="BertOnlyMLMHead.__init__-47"><a href="#BertOnlyMLMHead.__init__-47"><span class="linenos">47</span></a><span class="sd">            `bert_model_embedding_weights`:  torch.Tensor of size [hidden_size, vocab_size], the weights of the input embeddings of bert</span>
+</span><span id="BertOnlyMLMHead.__init__-48"><a href="#BertOnlyMLMHead.__init__-48"><span class="linenos">48</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="BertOnlyMLMHead.__init__-49"><a href="#BertOnlyMLMHead.__init__-49"><span class="linenos">49</span></a>        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+</span><span id="BertOnlyMLMHead.__init__-50"><a href="#BertOnlyMLMHead.__init__-50"><span class="linenos">50</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">predictions</span> <span class="o">=</span> <span class="n">BertLMPredictionHead</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">bert_model_embedding_weights</span><span class="p">)</span>
 </span></pre></div>
 
 
-            <div class="docstring"><p>Initializes internal Module state, shared by both nn.Module and ScriptModule.</p>
+            <div class="docstring"><p>constructs a <code><a href="#BertOnlyMLMHead">BertOnlyMLMHead</a></code></p>
+
+<h6 id="args">Args</h6>
+
+<ul>
+<li><strong>config:</strong>  a <code>BertConfig</code></li>
+<li><strong><code>bert_model_embedding_weights</code>:</strong>   torch.Tensor of size [hidden_size, vocab_size], the weights of the input embeddings of bert</li>
+</ul>
 </div>
 
 
@@ -484,24 +547,24 @@ must be made before assignment on the child.</p>
 
     </div>
     <a class="headerlink" href="#BertOnlyMLMHead.forward"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="BertOnlyMLMHead.forward-31"><a href="#BertOnlyMLMHead.forward-31"><span class="linenos">31</span></a>    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sequence_output</span><span class="p">):</span>
-</span><span id="BertOnlyMLMHead.forward-32"><a href="#BertOnlyMLMHead.forward-32"><span class="linenos">32</span></a>        <span class="n">prediction_scores</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">predictions</span><span class="p">(</span><span class="n">sequence_output</span><span class="p">)</span>
-</span><span id="BertOnlyMLMHead.forward-33"><a href="#BertOnlyMLMHead.forward-33"><span class="linenos">33</span></a>        <span class="k">return</span> <span class="n">prediction_scores</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="BertOnlyMLMHead.forward-52"><a href="#BertOnlyMLMHead.forward-52"><span class="linenos">52</span></a>    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sequence_output</span><span class="p">):</span>
+</span><span id="BertOnlyMLMHead.forward-53"><a href="#BertOnlyMLMHead.forward-53"><span class="linenos">53</span></a>        <span class="sd">&quot;&quot;&quot;Forward pass through the module</span>
+</span><span id="BertOnlyMLMHead.forward-54"><a href="#BertOnlyMLMHead.forward-54"><span class="linenos">54</span></a><span class="sd">        </span>
+</span><span id="BertOnlyMLMHead.forward-55"><a href="#BertOnlyMLMHead.forward-55"><span class="linenos">55</span></a><span class="sd">        Returns:</span>
+</span><span id="BertOnlyMLMHead.forward-56"><a href="#BertOnlyMLMHead.forward-56"><span class="linenos">56</span></a><span class="sd">            hidden_states: torch.Tensor of size [batch_size, seq_length, vocab_size], output representations</span>
+</span><span id="BertOnlyMLMHead.forward-57"><a href="#BertOnlyMLMHead.forward-57"><span class="linenos">57</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="BertOnlyMLMHead.forward-58"><a href="#BertOnlyMLMHead.forward-58"><span class="linenos">58</span></a>        <span class="n">prediction_scores</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">predictions</span><span class="p">(</span><span class="n">sequence_output</span><span class="p">)</span>
+</span><span id="BertOnlyMLMHead.forward-59"><a href="#BertOnlyMLMHead.forward-59"><span class="linenos">59</span></a>        <span class="k">return</span> <span class="n">prediction_scores</span>
 </span></pre></div>
 
 
-            <div class="docstring"><p>Defines the computation performed at every call.</p>
+            <div class="docstring"><p>Forward pass through the module</p>
 
-<p>Should be overridden by all subclasses.</p>
+<h6 id="returns">Returns</h6>
 
-<div class="pdoc-alert pdoc-alert-note">
-
-<p>Although the recipe for forward pass needs to be defined within
-this function, one should call the <code>Module</code> instance afterwards
-instead of this since the former takes care of running the
-registered hooks while the latter silently ignores them.</p>
-
-</div>
+<blockquote>
+  <p>hidden_states: torch.Tensor of size [batch_size, seq_length, vocab_size], output representations</p>
+</blockquote>
 </div>
 
 
@@ -568,56 +631,34 @@ registered hooks while the latter silently ignores them.</p>
 
     </div>
     <a class="headerlink" href="#BertPredictionHeadTransform"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="BertPredictionHeadTransform-35"><a href="#BertPredictionHeadTransform-35"><span class="linenos">35</span></a><span class="k">class</span> <span class="nc">BertPredictionHeadTransform</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
-</span><span id="BertPredictionHeadTransform-36"><a href="#BertPredictionHeadTransform-36"><span class="linenos">36</span></a>
-</span><span id="BertPredictionHeadTransform-37"><a href="#BertPredictionHeadTransform-37"><span class="linenos">37</span></a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">):</span>
-</span><span id="BertPredictionHeadTransform-38"><a href="#BertPredictionHeadTransform-38"><span class="linenos">38</span></a>        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
-</span><span id="BertPredictionHeadTransform-39"><a href="#BertPredictionHeadTransform-39"><span class="linenos">39</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">dense</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">)</span>
-</span><span id="BertPredictionHeadTransform-40"><a href="#BertPredictionHeadTransform-40"><span class="linenos">40</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">transform_act_fn</span> <span class="o">=</span> <span class="n">get_activation_function</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">hidden_act</span><span class="p">)</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">hidden_act</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">else</span> <span class="n">config</span><span class="o">.</span><span class="n">hidden_act</span>
-</span><span id="BertPredictionHeadTransform-41"><a href="#BertPredictionHeadTransform-41"><span class="linenos">41</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">LayerNorm</span> <span class="o">=</span> <span class="n">LayerNorm</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">,</span> <span class="n">eps</span><span class="o">=</span><span class="mf">1e-12</span><span class="p">)</span>
-</span><span id="BertPredictionHeadTransform-42"><a href="#BertPredictionHeadTransform-42"><span class="linenos">42</span></a>
-</span><span id="BertPredictionHeadTransform-43"><a href="#BertPredictionHeadTransform-43"><span class="linenos">43</span></a>    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hidden_states</span><span class="p">):</span>
-</span><span id="BertPredictionHeadTransform-44"><a href="#BertPredictionHeadTransform-44"><span class="linenos">44</span></a>        <span class="n">hidden_states</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dense</span><span class="p">(</span><span class="n">hidden_states</span><span class="p">)</span>
-</span><span id="BertPredictionHeadTransform-45"><a href="#BertPredictionHeadTransform-45"><span class="linenos">45</span></a>        <span class="n">hidden_states</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">transform_act_fn</span><span class="p">(</span><span class="n">hidden_states</span><span class="p">)</span>
-</span><span id="BertPredictionHeadTransform-46"><a href="#BertPredictionHeadTransform-46"><span class="linenos">46</span></a>        <span class="n">hidden_states</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">LayerNorm</span><span class="p">(</span><span class="n">hidden_states</span><span class="p">)</span>
-</span><span id="BertPredictionHeadTransform-47"><a href="#BertPredictionHeadTransform-47"><span class="linenos">47</span></a>        <span class="k">return</span> <span class="n">hidden_states</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="BertPredictionHeadTransform-61"><a href="#BertPredictionHeadTransform-61"><span class="linenos">61</span></a><span class="k">class</span> <span class="nc">BertPredictionHeadTransform</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+</span><span id="BertPredictionHeadTransform-62"><a href="#BertPredictionHeadTransform-62"><span class="linenos">62</span></a>    <span class="sd">&quot;&quot;&quot; Bert Head for the Masked Language Modeling Pre-training task of Bert</span>
+</span><span id="BertPredictionHeadTransform-63"><a href="#BertPredictionHeadTransform-63"><span class="linenos">63</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="BertPredictionHeadTransform-64"><a href="#BertPredictionHeadTransform-64"><span class="linenos">64</span></a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">):</span>
+</span><span id="BertPredictionHeadTransform-65"><a href="#BertPredictionHeadTransform-65"><span class="linenos">65</span></a>        <span class="sd">&quot;&quot;&quot;Constructs a `BertPredictionHeadTransform`</span>
+</span><span id="BertPredictionHeadTransform-66"><a href="#BertPredictionHeadTransform-66"><span class="linenos">66</span></a><span class="sd">        </span>
+</span><span id="BertPredictionHeadTransform-67"><a href="#BertPredictionHeadTransform-67"><span class="linenos">67</span></a><span class="sd">        Args:</span>
+</span><span id="BertPredictionHeadTransform-68"><a href="#BertPredictionHeadTransform-68"><span class="linenos">68</span></a><span class="sd">            config: a `BertConfig`</span>
+</span><span id="BertPredictionHeadTransform-69"><a href="#BertPredictionHeadTransform-69"><span class="linenos">69</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="BertPredictionHeadTransform-70"><a href="#BertPredictionHeadTransform-70"><span class="linenos">70</span></a>        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+</span><span id="BertPredictionHeadTransform-71"><a href="#BertPredictionHeadTransform-71"><span class="linenos">71</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">dense</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">)</span>
+</span><span id="BertPredictionHeadTransform-72"><a href="#BertPredictionHeadTransform-72"><span class="linenos">72</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">transform_act_fn</span> <span class="o">=</span> <span class="n">get_activation_function</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">hidden_act</span><span class="p">)</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">hidden_act</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">else</span> <span class="n">config</span><span class="o">.</span><span class="n">hidden_act</span>
+</span><span id="BertPredictionHeadTransform-73"><a href="#BertPredictionHeadTransform-73"><span class="linenos">73</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">LayerNorm</span> <span class="o">=</span> <span class="n">LayerNorm</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">,</span> <span class="n">eps</span><span class="o">=</span><span class="mf">1e-12</span><span class="p">)</span>
+</span><span id="BertPredictionHeadTransform-74"><a href="#BertPredictionHeadTransform-74"><span class="linenos">74</span></a>
+</span><span id="BertPredictionHeadTransform-75"><a href="#BertPredictionHeadTransform-75"><span class="linenos">75</span></a>    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hidden_states</span><span class="p">):</span>
+</span><span id="BertPredictionHeadTransform-76"><a href="#BertPredictionHeadTransform-76"><span class="linenos">76</span></a>        <span class="sd">&quot;&quot;&quot; Forward pass through the module</span>
+</span><span id="BertPredictionHeadTransform-77"><a href="#BertPredictionHeadTransform-77"><span class="linenos">77</span></a><span class="sd">        </span>
+</span><span id="BertPredictionHeadTransform-78"><a href="#BertPredictionHeadTransform-78"><span class="linenos">78</span></a><span class="sd">        Returns:</span>
+</span><span id="BertPredictionHeadTransform-79"><a href="#BertPredictionHeadTransform-79"><span class="linenos">79</span></a><span class="sd">            hidden_states: a torch.Tensor of size [batch_size, seq_length, hidden_size]</span>
+</span><span id="BertPredictionHeadTransform-80"><a href="#BertPredictionHeadTransform-80"><span class="linenos">80</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="BertPredictionHeadTransform-81"><a href="#BertPredictionHeadTransform-81"><span class="linenos">81</span></a>        <span class="n">hidden_states</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dense</span><span class="p">(</span><span class="n">hidden_states</span><span class="p">)</span>
+</span><span id="BertPredictionHeadTransform-82"><a href="#BertPredictionHeadTransform-82"><span class="linenos">82</span></a>        <span class="n">hidden_states</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">transform_act_fn</span><span class="p">(</span><span class="n">hidden_states</span><span class="p">)</span>
+</span><span id="BertPredictionHeadTransform-83"><a href="#BertPredictionHeadTransform-83"><span class="linenos">83</span></a>        <span class="n">hidden_states</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">LayerNorm</span><span class="p">(</span><span class="n">hidden_states</span><span class="p">)</span>
+</span><span id="BertPredictionHeadTransform-84"><a href="#BertPredictionHeadTransform-84"><span class="linenos">84</span></a>        <span class="k">return</span> <span class="n">hidden_states</span>
 </span></pre></div>
 
 
-            <div class="docstring"><p>Base class for all neural network modules.</p>
-
-<p>Your models should also subclass this class.</p>
-
-<p>Modules can also contain other Modules, allowing to nest them in
-a tree structure. You can assign the submodules as regular attributes::</p>
-
-<pre><code>import torch.nn as nn
-import torch.nn.functional as F
-
-class Model(nn.Module):
-    def __init__(self):
-        super().__init__()
-        self.conv1 = nn.Conv2d(1, 20, 5)
-        self.conv2 = nn.Conv2d(20, 20, 5)
-
-    def forward(self, x):
-        x = F.relu(self.conv1(x))
-        return F.relu(self.conv2(x))
-</code></pre>
-
-<p>Submodules assigned in this way will be registered, and will have their
-parameters converted too when you call <code><a href="#BertPredictionHeadTransform.to">to</a></code>, etc.</p>
-
-<div class="pdoc-alert pdoc-alert-note">
-
-<p>As per the example above, an <code><a href="#BertPredictionHeadTransform.__init__">__init__()</a></code> call to the parent class
-must be made before assignment on the child.</p>
-
-</div>
-
-<p>:ivar training: Boolean represents whether this module is in training or
-                evaluation mode.
-:vartype training: bool</p>
+            <div class="docstring"><p>Bert Head for the Masked Language Modeling Pre-training task of Bert</p>
 </div>
 
 
@@ -631,15 +672,26 @@ must be made before assignment on the child.</p>
 
     </div>
     <a class="headerlink" href="#BertPredictionHeadTransform.__init__"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="BertPredictionHeadTransform.__init__-37"><a href="#BertPredictionHeadTransform.__init__-37"><span class="linenos">37</span></a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">):</span>
-</span><span id="BertPredictionHeadTransform.__init__-38"><a href="#BertPredictionHeadTransform.__init__-38"><span class="linenos">38</span></a>        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
-</span><span id="BertPredictionHeadTransform.__init__-39"><a href="#BertPredictionHeadTransform.__init__-39"><span class="linenos">39</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">dense</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">)</span>
-</span><span id="BertPredictionHeadTransform.__init__-40"><a href="#BertPredictionHeadTransform.__init__-40"><span class="linenos">40</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">transform_act_fn</span> <span class="o">=</span> <span class="n">get_activation_function</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">hidden_act</span><span class="p">)</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">hidden_act</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">else</span> <span class="n">config</span><span class="o">.</span><span class="n">hidden_act</span>
-</span><span id="BertPredictionHeadTransform.__init__-41"><a href="#BertPredictionHeadTransform.__init__-41"><span class="linenos">41</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">LayerNorm</span> <span class="o">=</span> <span class="n">LayerNorm</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">,</span> <span class="n">eps</span><span class="o">=</span><span class="mf">1e-12</span><span class="p">)</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="BertPredictionHeadTransform.__init__-64"><a href="#BertPredictionHeadTransform.__init__-64"><span class="linenos">64</span></a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">):</span>
+</span><span id="BertPredictionHeadTransform.__init__-65"><a href="#BertPredictionHeadTransform.__init__-65"><span class="linenos">65</span></a>        <span class="sd">&quot;&quot;&quot;Constructs a `BertPredictionHeadTransform`</span>
+</span><span id="BertPredictionHeadTransform.__init__-66"><a href="#BertPredictionHeadTransform.__init__-66"><span class="linenos">66</span></a><span class="sd">        </span>
+</span><span id="BertPredictionHeadTransform.__init__-67"><a href="#BertPredictionHeadTransform.__init__-67"><span class="linenos">67</span></a><span class="sd">        Args:</span>
+</span><span id="BertPredictionHeadTransform.__init__-68"><a href="#BertPredictionHeadTransform.__init__-68"><span class="linenos">68</span></a><span class="sd">            config: a `BertConfig`</span>
+</span><span id="BertPredictionHeadTransform.__init__-69"><a href="#BertPredictionHeadTransform.__init__-69"><span class="linenos">69</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="BertPredictionHeadTransform.__init__-70"><a href="#BertPredictionHeadTransform.__init__-70"><span class="linenos">70</span></a>        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+</span><span id="BertPredictionHeadTransform.__init__-71"><a href="#BertPredictionHeadTransform.__init__-71"><span class="linenos">71</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">dense</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">)</span>
+</span><span id="BertPredictionHeadTransform.__init__-72"><a href="#BertPredictionHeadTransform.__init__-72"><span class="linenos">72</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">transform_act_fn</span> <span class="o">=</span> <span class="n">get_activation_function</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">hidden_act</span><span class="p">)</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">hidden_act</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">else</span> <span class="n">config</span><span class="o">.</span><span class="n">hidden_act</span>
+</span><span id="BertPredictionHeadTransform.__init__-73"><a href="#BertPredictionHeadTransform.__init__-73"><span class="linenos">73</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">LayerNorm</span> <span class="o">=</span> <span class="n">LayerNorm</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">,</span> <span class="n">eps</span><span class="o">=</span><span class="mf">1e-12</span><span class="p">)</span>
 </span></pre></div>
 
 
-            <div class="docstring"><p>Initializes internal Module state, shared by both nn.Module and ScriptModule.</p>
+            <div class="docstring"><p>Constructs a <code><a href="#BertPredictionHeadTransform">BertPredictionHeadTransform</a></code></p>
+
+<h6 id="args">Args</h6>
+
+<ul>
+<li><strong>config:</strong>  a <code>BertConfig</code></li>
+</ul>
 </div>
 
 
@@ -655,26 +707,26 @@ must be made before assignment on the child.</p>
 
     </div>
     <a class="headerlink" href="#BertPredictionHeadTransform.forward"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="BertPredictionHeadTransform.forward-43"><a href="#BertPredictionHeadTransform.forward-43"><span class="linenos">43</span></a>    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hidden_states</span><span class="p">):</span>
-</span><span id="BertPredictionHeadTransform.forward-44"><a href="#BertPredictionHeadTransform.forward-44"><span class="linenos">44</span></a>        <span class="n">hidden_states</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dense</span><span class="p">(</span><span class="n">hidden_states</span><span class="p">)</span>
-</span><span id="BertPredictionHeadTransform.forward-45"><a href="#BertPredictionHeadTransform.forward-45"><span class="linenos">45</span></a>        <span class="n">hidden_states</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">transform_act_fn</span><span class="p">(</span><span class="n">hidden_states</span><span class="p">)</span>
-</span><span id="BertPredictionHeadTransform.forward-46"><a href="#BertPredictionHeadTransform.forward-46"><span class="linenos">46</span></a>        <span class="n">hidden_states</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">LayerNorm</span><span class="p">(</span><span class="n">hidden_states</span><span class="p">)</span>
-</span><span id="BertPredictionHeadTransform.forward-47"><a href="#BertPredictionHeadTransform.forward-47"><span class="linenos">47</span></a>        <span class="k">return</span> <span class="n">hidden_states</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="BertPredictionHeadTransform.forward-75"><a href="#BertPredictionHeadTransform.forward-75"><span class="linenos">75</span></a>    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hidden_states</span><span class="p">):</span>
+</span><span id="BertPredictionHeadTransform.forward-76"><a href="#BertPredictionHeadTransform.forward-76"><span class="linenos">76</span></a>        <span class="sd">&quot;&quot;&quot; Forward pass through the module</span>
+</span><span id="BertPredictionHeadTransform.forward-77"><a href="#BertPredictionHeadTransform.forward-77"><span class="linenos">77</span></a><span class="sd">        </span>
+</span><span id="BertPredictionHeadTransform.forward-78"><a href="#BertPredictionHeadTransform.forward-78"><span class="linenos">78</span></a><span class="sd">        Returns:</span>
+</span><span id="BertPredictionHeadTransform.forward-79"><a href="#BertPredictionHeadTransform.forward-79"><span class="linenos">79</span></a><span class="sd">            hidden_states: a torch.Tensor of size [batch_size, seq_length, hidden_size]</span>
+</span><span id="BertPredictionHeadTransform.forward-80"><a href="#BertPredictionHeadTransform.forward-80"><span class="linenos">80</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="BertPredictionHeadTransform.forward-81"><a href="#BertPredictionHeadTransform.forward-81"><span class="linenos">81</span></a>        <span class="n">hidden_states</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dense</span><span class="p">(</span><span class="n">hidden_states</span><span class="p">)</span>
+</span><span id="BertPredictionHeadTransform.forward-82"><a href="#BertPredictionHeadTransform.forward-82"><span class="linenos">82</span></a>        <span class="n">hidden_states</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">transform_act_fn</span><span class="p">(</span><span class="n">hidden_states</span><span class="p">)</span>
+</span><span id="BertPredictionHeadTransform.forward-83"><a href="#BertPredictionHeadTransform.forward-83"><span class="linenos">83</span></a>        <span class="n">hidden_states</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">LayerNorm</span><span class="p">(</span><span class="n">hidden_states</span><span class="p">)</span>
+</span><span id="BertPredictionHeadTransform.forward-84"><a href="#BertPredictionHeadTransform.forward-84"><span class="linenos">84</span></a>        <span class="k">return</span> <span class="n">hidden_states</span>
 </span></pre></div>
 
 
-            <div class="docstring"><p>Defines the computation performed at every call.</p>
+            <div class="docstring"><p>Forward pass through the module</p>
 
-<p>Should be overridden by all subclasses.</p>
+<h6 id="returns">Returns</h6>
 
-<div class="pdoc-alert pdoc-alert-note">
-
-<p>Although the recipe for forward pass needs to be defined within
-this function, one should call the <code>Module</code> instance afterwards
-instead of this since the former takes care of running the
-registered hooks while the latter silently ignores them.</p>
-
-</div>
+<blockquote>
+  <p>hidden_states: a torch.Tensor of size [batch_size, seq_length, hidden_size]</p>
+</blockquote>
 </div>
 
 
@@ -741,51 +793,30 @@ registered hooks while the latter silently ignores them.</p>
 
     </div>
     <a class="headerlink" href="#BertOnlyNSPHead"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="BertOnlyNSPHead-49"><a href="#BertOnlyNSPHead-49"><span class="linenos">49</span></a><span class="k">class</span> <span class="nc">BertOnlyNSPHead</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
-</span><span id="BertOnlyNSPHead-50"><a href="#BertOnlyNSPHead-50"><span class="linenos">50</span></a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">):</span>
-</span><span id="BertOnlyNSPHead-51"><a href="#BertOnlyNSPHead-51"><span class="linenos">51</span></a>        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
-</span><span id="BertOnlyNSPHead-52"><a href="#BertOnlyNSPHead-52"><span class="linenos">52</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">seq_relationship</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
-</span><span id="BertOnlyNSPHead-53"><a href="#BertOnlyNSPHead-53"><span class="linenos">53</span></a>
-</span><span id="BertOnlyNSPHead-54"><a href="#BertOnlyNSPHead-54"><span class="linenos">54</span></a>    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pooled_output</span><span class="p">):</span>
-</span><span id="BertOnlyNSPHead-55"><a href="#BertOnlyNSPHead-55"><span class="linenos">55</span></a>        <span class="n">seq_relationship_score</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">seq_relationship</span><span class="p">(</span><span class="n">pooled_output</span><span class="p">)</span>
-</span><span id="BertOnlyNSPHead-56"><a href="#BertOnlyNSPHead-56"><span class="linenos">56</span></a>        <span class="k">return</span> <span class="n">seq_relationship_score</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="BertOnlyNSPHead-86"><a href="#BertOnlyNSPHead-86"><span class="linenos"> 86</span></a><span class="k">class</span> <span class="nc">BertOnlyNSPHead</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+</span><span id="BertOnlyNSPHead-87"><a href="#BertOnlyNSPHead-87"><span class="linenos"> 87</span></a>    <span class="sd">&quot;&quot;&quot; Bert Head for the Next Sentence Prediction task of Bert</span>
+</span><span id="BertOnlyNSPHead-88"><a href="#BertOnlyNSPHead-88"><span class="linenos"> 88</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="BertOnlyNSPHead-89"><a href="#BertOnlyNSPHead-89"><span class="linenos"> 89</span></a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">):</span>
+</span><span id="BertOnlyNSPHead-90"><a href="#BertOnlyNSPHead-90"><span class="linenos"> 90</span></a>        <span class="sd">&quot;&quot;&quot; constructs a `BertOnlyNSPHead`</span>
+</span><span id="BertOnlyNSPHead-91"><a href="#BertOnlyNSPHead-91"><span class="linenos"> 91</span></a><span class="sd">        </span>
+</span><span id="BertOnlyNSPHead-92"><a href="#BertOnlyNSPHead-92"><span class="linenos"> 92</span></a><span class="sd">        Args:</span>
+</span><span id="BertOnlyNSPHead-93"><a href="#BertOnlyNSPHead-93"><span class="linenos"> 93</span></a><span class="sd">            config: a `BertConfig`</span>
+</span><span id="BertOnlyNSPHead-94"><a href="#BertOnlyNSPHead-94"><span class="linenos"> 94</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="BertOnlyNSPHead-95"><a href="#BertOnlyNSPHead-95"><span class="linenos"> 95</span></a>        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+</span><span id="BertOnlyNSPHead-96"><a href="#BertOnlyNSPHead-96"><span class="linenos"> 96</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">seq_relationship</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+</span><span id="BertOnlyNSPHead-97"><a href="#BertOnlyNSPHead-97"><span class="linenos"> 97</span></a>
+</span><span id="BertOnlyNSPHead-98"><a href="#BertOnlyNSPHead-98"><span class="linenos"> 98</span></a>    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pooled_output</span><span class="p">):</span>
+</span><span id="BertOnlyNSPHead-99"><a href="#BertOnlyNSPHead-99"><span class="linenos"> 99</span></a>        <span class="sd">&quot;&quot;&quot; Forward pass through the module</span>
+</span><span id="BertOnlyNSPHead-100"><a href="#BertOnlyNSPHead-100"><span class="linenos">100</span></a><span class="sd">        </span>
+</span><span id="BertOnlyNSPHead-101"><a href="#BertOnlyNSPHead-101"><span class="linenos">101</span></a><span class="sd">        Returns:</span>
+</span><span id="BertOnlyNSPHead-102"><a href="#BertOnlyNSPHead-102"><span class="linenos">102</span></a><span class="sd">            seq_relationship_score: a torch.Tensor of size [batch_size, 2], score for prediction of next sentence</span>
+</span><span id="BertOnlyNSPHead-103"><a href="#BertOnlyNSPHead-103"><span class="linenos">103</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="BertOnlyNSPHead-104"><a href="#BertOnlyNSPHead-104"><span class="linenos">104</span></a>        <span class="n">seq_relationship_score</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">seq_relationship</span><span class="p">(</span><span class="n">pooled_output</span><span class="p">)</span>
+</span><span id="BertOnlyNSPHead-105"><a href="#BertOnlyNSPHead-105"><span class="linenos">105</span></a>        <span class="k">return</span> <span class="n">seq_relationship_score</span>
 </span></pre></div>
 
 
-            <div class="docstring"><p>Base class for all neural network modules.</p>
-
-<p>Your models should also subclass this class.</p>
-
-<p>Modules can also contain other Modules, allowing to nest them in
-a tree structure. You can assign the submodules as regular attributes::</p>
-
-<pre><code>import torch.nn as nn
-import torch.nn.functional as F
-
-class Model(nn.Module):
-    def __init__(self):
-        super().__init__()
-        self.conv1 = nn.Conv2d(1, 20, 5)
-        self.conv2 = nn.Conv2d(20, 20, 5)
-
-    def forward(self, x):
-        x = F.relu(self.conv1(x))
-        return F.relu(self.conv2(x))
-</code></pre>
-
-<p>Submodules assigned in this way will be registered, and will have their
-parameters converted too when you call <code><a href="#BertOnlyNSPHead.to">to</a></code>, etc.</p>
-
-<div class="pdoc-alert pdoc-alert-note">
-
-<p>As per the example above, an <code><a href="#BertOnlyNSPHead.__init__">__init__()</a></code> call to the parent class
-must be made before assignment on the child.</p>
-
-</div>
-
-<p>:ivar training: Boolean represents whether this module is in training or
-                evaluation mode.
-:vartype training: bool</p>
+            <div class="docstring"><p>Bert Head for the Next Sentence Prediction task of Bert</p>
 </div>
 
 
@@ -799,13 +830,24 @@ must be made before assignment on the child.</p>
 
     </div>
     <a class="headerlink" href="#BertOnlyNSPHead.__init__"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="BertOnlyNSPHead.__init__-50"><a href="#BertOnlyNSPHead.__init__-50"><span class="linenos">50</span></a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">):</span>
-</span><span id="BertOnlyNSPHead.__init__-51"><a href="#BertOnlyNSPHead.__init__-51"><span class="linenos">51</span></a>        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
-</span><span id="BertOnlyNSPHead.__init__-52"><a href="#BertOnlyNSPHead.__init__-52"><span class="linenos">52</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">seq_relationship</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="BertOnlyNSPHead.__init__-89"><a href="#BertOnlyNSPHead.__init__-89"><span class="linenos">89</span></a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">):</span>
+</span><span id="BertOnlyNSPHead.__init__-90"><a href="#BertOnlyNSPHead.__init__-90"><span class="linenos">90</span></a>        <span class="sd">&quot;&quot;&quot; constructs a `BertOnlyNSPHead`</span>
+</span><span id="BertOnlyNSPHead.__init__-91"><a href="#BertOnlyNSPHead.__init__-91"><span class="linenos">91</span></a><span class="sd">        </span>
+</span><span id="BertOnlyNSPHead.__init__-92"><a href="#BertOnlyNSPHead.__init__-92"><span class="linenos">92</span></a><span class="sd">        Args:</span>
+</span><span id="BertOnlyNSPHead.__init__-93"><a href="#BertOnlyNSPHead.__init__-93"><span class="linenos">93</span></a><span class="sd">            config: a `BertConfig`</span>
+</span><span id="BertOnlyNSPHead.__init__-94"><a href="#BertOnlyNSPHead.__init__-94"><span class="linenos">94</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="BertOnlyNSPHead.__init__-95"><a href="#BertOnlyNSPHead.__init__-95"><span class="linenos">95</span></a>        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+</span><span id="BertOnlyNSPHead.__init__-96"><a href="#BertOnlyNSPHead.__init__-96"><span class="linenos">96</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">seq_relationship</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
 </span></pre></div>
 
 
-            <div class="docstring"><p>Initializes internal Module state, shared by both nn.Module and ScriptModule.</p>
+            <div class="docstring"><p>constructs a <code><a href="#BertOnlyNSPHead">BertOnlyNSPHead</a></code></p>
+
+<h6 id="args">Args</h6>
+
+<ul>
+<li><strong>config:</strong>  a <code>BertConfig</code></li>
+</ul>
 </div>
 
 
@@ -821,24 +863,24 @@ must be made before assignment on the child.</p>
 
     </div>
     <a class="headerlink" href="#BertOnlyNSPHead.forward"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="BertOnlyNSPHead.forward-54"><a href="#BertOnlyNSPHead.forward-54"><span class="linenos">54</span></a>    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pooled_output</span><span class="p">):</span>
-</span><span id="BertOnlyNSPHead.forward-55"><a href="#BertOnlyNSPHead.forward-55"><span class="linenos">55</span></a>        <span class="n">seq_relationship_score</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">seq_relationship</span><span class="p">(</span><span class="n">pooled_output</span><span class="p">)</span>
-</span><span id="BertOnlyNSPHead.forward-56"><a href="#BertOnlyNSPHead.forward-56"><span class="linenos">56</span></a>        <span class="k">return</span> <span class="n">seq_relationship_score</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="BertOnlyNSPHead.forward-98"><a href="#BertOnlyNSPHead.forward-98"><span class="linenos"> 98</span></a>    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pooled_output</span><span class="p">):</span>
+</span><span id="BertOnlyNSPHead.forward-99"><a href="#BertOnlyNSPHead.forward-99"><span class="linenos"> 99</span></a>        <span class="sd">&quot;&quot;&quot; Forward pass through the module</span>
+</span><span id="BertOnlyNSPHead.forward-100"><a href="#BertOnlyNSPHead.forward-100"><span class="linenos">100</span></a><span class="sd">        </span>
+</span><span id="BertOnlyNSPHead.forward-101"><a href="#BertOnlyNSPHead.forward-101"><span class="linenos">101</span></a><span class="sd">        Returns:</span>
+</span><span id="BertOnlyNSPHead.forward-102"><a href="#BertOnlyNSPHead.forward-102"><span class="linenos">102</span></a><span class="sd">            seq_relationship_score: a torch.Tensor of size [batch_size, 2], score for prediction of next sentence</span>
+</span><span id="BertOnlyNSPHead.forward-103"><a href="#BertOnlyNSPHead.forward-103"><span class="linenos">103</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="BertOnlyNSPHead.forward-104"><a href="#BertOnlyNSPHead.forward-104"><span class="linenos">104</span></a>        <span class="n">seq_relationship_score</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">seq_relationship</span><span class="p">(</span><span class="n">pooled_output</span><span class="p">)</span>
+</span><span id="BertOnlyNSPHead.forward-105"><a href="#BertOnlyNSPHead.forward-105"><span class="linenos">105</span></a>        <span class="k">return</span> <span class="n">seq_relationship_score</span>
 </span></pre></div>
 
 
-            <div class="docstring"><p>Defines the computation performed at every call.</p>
+            <div class="docstring"><p>Forward pass through the module</p>
 
-<p>Should be overridden by all subclasses.</p>
+<h6 id="returns">Returns</h6>
 
-<div class="pdoc-alert pdoc-alert-note">
-
-<p>Although the recipe for forward pass needs to be defined within
-this function, one should call the <code>Module</code> instance afterwards
-instead of this since the former takes care of running the
-registered hooks while the latter silently ignores them.</p>
-
-</div>
+<blockquote>
+  <p>seq_relationship_score: a torch.Tensor of size [batch_size, 2], score for prediction of next sentence</p>
+</blockquote>
 </div>
 
 
@@ -905,58 +947,37 @@ registered hooks while the latter silently ignores them.</p>
 
     </div>
     <a class="headerlink" href="#ErnieEntPredictionHead"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="ErnieEntPredictionHead-58"><a href="#ErnieEntPredictionHead-58"><span class="linenos">58</span></a><span class="k">class</span> <span class="nc">ErnieEntPredictionHead</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
-</span><span id="ErnieEntPredictionHead-59"><a href="#ErnieEntPredictionHead-59"><span class="linenos">59</span></a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">):</span>
-</span><span id="ErnieEntPredictionHead-60"><a href="#ErnieEntPredictionHead-60"><span class="linenos">60</span></a>        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
-</span><span id="ErnieEntPredictionHead-61"><a href="#ErnieEntPredictionHead-61"><span class="linenos">61</span></a>        <span class="n">config_ent</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
-</span><span id="ErnieEntPredictionHead-62"><a href="#ErnieEntPredictionHead-62"><span class="linenos">62</span></a>        <span class="c1">#Replace the hidden_size by the entity size for the Bert head to have the correct dimension</span>
-</span><span id="ErnieEntPredictionHead-63"><a href="#ErnieEntPredictionHead-63"><span class="linenos">63</span></a>        <span class="n">config_ent</span><span class="o">.</span><span class="n">hidden_size</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">ent</span><span class="o">.</span><span class="n">entity_size</span>
-</span><span id="ErnieEntPredictionHead-64"><a href="#ErnieEntPredictionHead-64"><span class="linenos">64</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">transform</span> <span class="o">=</span> <span class="n">BertPredictionHeadTransform</span><span class="p">(</span><span class="n">config_ent</span><span class="p">)</span>
-</span><span id="ErnieEntPredictionHead-65"><a href="#ErnieEntPredictionHead-65"><span class="linenos">65</span></a>
-</span><span id="ErnieEntPredictionHead-66"><a href="#ErnieEntPredictionHead-66"><span class="linenos">66</span></a>    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hidden_states</span><span class="p">,</span> <span class="n">candidate</span><span class="p">):</span>
-</span><span id="ErnieEntPredictionHead-67"><a href="#ErnieEntPredictionHead-67"><span class="linenos">67</span></a>        <span class="n">hidden_states</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">hidden_states</span><span class="p">)</span>
-</span><span id="ErnieEntPredictionHead-68"><a href="#ErnieEntPredictionHead-68"><span class="linenos">68</span></a>        <span class="n">candidate</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="n">candidate</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
-</span><span id="ErnieEntPredictionHead-69"><a href="#ErnieEntPredictionHead-69"><span class="linenos">69</span></a>        <span class="c1"># hidden_states [batch_size, max_seq, dim]</span>
-</span><span id="ErnieEntPredictionHead-70"><a href="#ErnieEntPredictionHead-70"><span class="linenos">70</span></a>        <span class="c1"># candidate [entity_num_in_the_batch, dim]</span>
-</span><span id="ErnieEntPredictionHead-71"><a href="#ErnieEntPredictionHead-71"><span class="linenos">71</span></a>        <span class="c1"># return [batch_size, max_seq, entity_num_in_the_batch]</span>
-</span><span id="ErnieEntPredictionHead-72"><a href="#ErnieEntPredictionHead-72"><span class="linenos">72</span></a>        <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">matmul</span><span class="p">(</span><span class="n">hidden_states</span><span class="p">,</span> <span class="n">candidate</span><span class="o">.</span><span class="n">t</span><span class="p">())</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="ErnieEntPredictionHead-107"><a href="#ErnieEntPredictionHead-107"><span class="linenos">107</span></a><span class="k">class</span> <span class="nc">ErnieEntPredictionHead</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+</span><span id="ErnieEntPredictionHead-108"><a href="#ErnieEntPredictionHead-108"><span class="linenos">108</span></a>    <span class="sd">&quot;&quot;&quot; Ernie Head for predicting entities</span>
+</span><span id="ErnieEntPredictionHead-109"><a href="#ErnieEntPredictionHead-109"><span class="linenos">109</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="ErnieEntPredictionHead-110"><a href="#ErnieEntPredictionHead-110"><span class="linenos">110</span></a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">):</span>
+</span><span id="ErnieEntPredictionHead-111"><a href="#ErnieEntPredictionHead-111"><span class="linenos">111</span></a>        <span class="sd">&quot;&quot;&quot; constructs a `ErnieEntPredictionHead`</span>
+</span><span id="ErnieEntPredictionHead-112"><a href="#ErnieEntPredictionHead-112"><span class="linenos">112</span></a><span class="sd">        </span>
+</span><span id="ErnieEntPredictionHead-113"><a href="#ErnieEntPredictionHead-113"><span class="linenos">113</span></a><span class="sd">        Args:</span>
+</span><span id="ErnieEntPredictionHead-114"><a href="#ErnieEntPredictionHead-114"><span class="linenos">114</span></a><span class="sd">            config: a `BertConfig`</span>
+</span><span id="ErnieEntPredictionHead-115"><a href="#ErnieEntPredictionHead-115"><span class="linenos">115</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="ErnieEntPredictionHead-116"><a href="#ErnieEntPredictionHead-116"><span class="linenos">116</span></a>        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+</span><span id="ErnieEntPredictionHead-117"><a href="#ErnieEntPredictionHead-117"><span class="linenos">117</span></a>        <span class="n">config_ent</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+</span><span id="ErnieEntPredictionHead-118"><a href="#ErnieEntPredictionHead-118"><span class="linenos">118</span></a>        <span class="c1">#Replace the hidden_size by the entity size for the Bert head to have the correct dimension</span>
+</span><span id="ErnieEntPredictionHead-119"><a href="#ErnieEntPredictionHead-119"><span class="linenos">119</span></a>        <span class="n">config_ent</span><span class="o">.</span><span class="n">hidden_size</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">ent</span><span class="o">.</span><span class="n">entity_size</span>
+</span><span id="ErnieEntPredictionHead-120"><a href="#ErnieEntPredictionHead-120"><span class="linenos">120</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">transform</span> <span class="o">=</span> <span class="n">BertPredictionHeadTransform</span><span class="p">(</span><span class="n">config_ent</span><span class="p">)</span>
+</span><span id="ErnieEntPredictionHead-121"><a href="#ErnieEntPredictionHead-121"><span class="linenos">121</span></a>
+</span><span id="ErnieEntPredictionHead-122"><a href="#ErnieEntPredictionHead-122"><span class="linenos">122</span></a>    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hidden_states</span><span class="p">,</span> <span class="n">candidate</span><span class="p">):</span>
+</span><span id="ErnieEntPredictionHead-123"><a href="#ErnieEntPredictionHead-123"><span class="linenos">123</span></a>        <span class="sd">&quot;&quot;&quot; Forward pass through the module</span>
+</span><span id="ErnieEntPredictionHead-124"><a href="#ErnieEntPredictionHead-124"><span class="linenos">124</span></a><span class="sd">        </span>
+</span><span id="ErnieEntPredictionHead-125"><a href="#ErnieEntPredictionHead-125"><span class="linenos">125</span></a><span class="sd">        Returns:</span>
+</span><span id="ErnieEntPredictionHead-126"><a href="#ErnieEntPredictionHead-126"><span class="linenos">126</span></a><span class="sd">            seq_relationship_score: a torch.Tensor of size [batch_size, seq_length, no_of_entity_in_batch], predicted entities</span>
+</span><span id="ErnieEntPredictionHead-127"><a href="#ErnieEntPredictionHead-127"><span class="linenos">127</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="ErnieEntPredictionHead-128"><a href="#ErnieEntPredictionHead-128"><span class="linenos">128</span></a>        <span class="n">hidden_states</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">hidden_states</span><span class="p">)</span>
+</span><span id="ErnieEntPredictionHead-129"><a href="#ErnieEntPredictionHead-129"><span class="linenos">129</span></a>        <span class="n">candidate</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="n">candidate</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+</span><span id="ErnieEntPredictionHead-130"><a href="#ErnieEntPredictionHead-130"><span class="linenos">130</span></a>        <span class="c1"># hidden_states [batch_size, max_seq, dim]</span>
+</span><span id="ErnieEntPredictionHead-131"><a href="#ErnieEntPredictionHead-131"><span class="linenos">131</span></a>        <span class="c1"># candidate [entity_num_in_the_batch, dim]</span>
+</span><span id="ErnieEntPredictionHead-132"><a href="#ErnieEntPredictionHead-132"><span class="linenos">132</span></a>        <span class="c1"># return [batch_size, max_seq, entity_num_in_the_batch]</span>
+</span><span id="ErnieEntPredictionHead-133"><a href="#ErnieEntPredictionHead-133"><span class="linenos">133</span></a>        <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">matmul</span><span class="p">(</span><span class="n">hidden_states</span><span class="p">,</span> <span class="n">candidate</span><span class="o">.</span><span class="n">t</span><span class="p">())</span>
 </span></pre></div>
 
 
-            <div class="docstring"><p>Base class for all neural network modules.</p>
-
-<p>Your models should also subclass this class.</p>
-
-<p>Modules can also contain other Modules, allowing to nest them in
-a tree structure. You can assign the submodules as regular attributes::</p>
-
-<pre><code>import torch.nn as nn
-import torch.nn.functional as F
-
-class Model(nn.Module):
-    def __init__(self):
-        super().__init__()
-        self.conv1 = nn.Conv2d(1, 20, 5)
-        self.conv2 = nn.Conv2d(20, 20, 5)
-
-    def forward(self, x):
-        x = F.relu(self.conv1(x))
-        return F.relu(self.conv2(x))
-</code></pre>
-
-<p>Submodules assigned in this way will be registered, and will have their
-parameters converted too when you call <code><a href="#ErnieEntPredictionHead.to">to</a></code>, etc.</p>
-
-<div class="pdoc-alert pdoc-alert-note">
-
-<p>As per the example above, an <code><a href="#ErnieEntPredictionHead.__init__">__init__()</a></code> call to the parent class
-must be made before assignment on the child.</p>
-
-</div>
-
-<p>:ivar training: Boolean represents whether this module is in training or
-                evaluation mode.
-:vartype training: bool</p>
+            <div class="docstring"><p>Ernie Head for predicting entities</p>
 </div>
 
 
@@ -970,16 +991,27 @@ must be made before assignment on the child.</p>
 
     </div>
     <a class="headerlink" href="#ErnieEntPredictionHead.__init__"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="ErnieEntPredictionHead.__init__-59"><a href="#ErnieEntPredictionHead.__init__-59"><span class="linenos">59</span></a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">):</span>
-</span><span id="ErnieEntPredictionHead.__init__-60"><a href="#ErnieEntPredictionHead.__init__-60"><span class="linenos">60</span></a>        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
-</span><span id="ErnieEntPredictionHead.__init__-61"><a href="#ErnieEntPredictionHead.__init__-61"><span class="linenos">61</span></a>        <span class="n">config_ent</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
-</span><span id="ErnieEntPredictionHead.__init__-62"><a href="#ErnieEntPredictionHead.__init__-62"><span class="linenos">62</span></a>        <span class="c1">#Replace the hidden_size by the entity size for the Bert head to have the correct dimension</span>
-</span><span id="ErnieEntPredictionHead.__init__-63"><a href="#ErnieEntPredictionHead.__init__-63"><span class="linenos">63</span></a>        <span class="n">config_ent</span><span class="o">.</span><span class="n">hidden_size</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">ent</span><span class="o">.</span><span class="n">entity_size</span>
-</span><span id="ErnieEntPredictionHead.__init__-64"><a href="#ErnieEntPredictionHead.__init__-64"><span class="linenos">64</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">transform</span> <span class="o">=</span> <span class="n">BertPredictionHeadTransform</span><span class="p">(</span><span class="n">config_ent</span><span class="p">)</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="ErnieEntPredictionHead.__init__-110"><a href="#ErnieEntPredictionHead.__init__-110"><span class="linenos">110</span></a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">):</span>
+</span><span id="ErnieEntPredictionHead.__init__-111"><a href="#ErnieEntPredictionHead.__init__-111"><span class="linenos">111</span></a>        <span class="sd">&quot;&quot;&quot; constructs a `ErnieEntPredictionHead`</span>
+</span><span id="ErnieEntPredictionHead.__init__-112"><a href="#ErnieEntPredictionHead.__init__-112"><span class="linenos">112</span></a><span class="sd">        </span>
+</span><span id="ErnieEntPredictionHead.__init__-113"><a href="#ErnieEntPredictionHead.__init__-113"><span class="linenos">113</span></a><span class="sd">        Args:</span>
+</span><span id="ErnieEntPredictionHead.__init__-114"><a href="#ErnieEntPredictionHead.__init__-114"><span class="linenos">114</span></a><span class="sd">            config: a `BertConfig`</span>
+</span><span id="ErnieEntPredictionHead.__init__-115"><a href="#ErnieEntPredictionHead.__init__-115"><span class="linenos">115</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="ErnieEntPredictionHead.__init__-116"><a href="#ErnieEntPredictionHead.__init__-116"><span class="linenos">116</span></a>        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+</span><span id="ErnieEntPredictionHead.__init__-117"><a href="#ErnieEntPredictionHead.__init__-117"><span class="linenos">117</span></a>        <span class="n">config_ent</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+</span><span id="ErnieEntPredictionHead.__init__-118"><a href="#ErnieEntPredictionHead.__init__-118"><span class="linenos">118</span></a>        <span class="c1">#Replace the hidden_size by the entity size for the Bert head to have the correct dimension</span>
+</span><span id="ErnieEntPredictionHead.__init__-119"><a href="#ErnieEntPredictionHead.__init__-119"><span class="linenos">119</span></a>        <span class="n">config_ent</span><span class="o">.</span><span class="n">hidden_size</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">ent</span><span class="o">.</span><span class="n">entity_size</span>
+</span><span id="ErnieEntPredictionHead.__init__-120"><a href="#ErnieEntPredictionHead.__init__-120"><span class="linenos">120</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">transform</span> <span class="o">=</span> <span class="n">BertPredictionHeadTransform</span><span class="p">(</span><span class="n">config_ent</span><span class="p">)</span>
 </span></pre></div>
 
 
-            <div class="docstring"><p>Initializes internal Module state, shared by both nn.Module and ScriptModule.</p>
+            <div class="docstring"><p>constructs a <code><a href="#ErnieEntPredictionHead">ErnieEntPredictionHead</a></code></p>
+
+<h6 id="args">Args</h6>
+
+<ul>
+<li><strong>config:</strong>  a <code>BertConfig</code></li>
+</ul>
 </div>
 
 
@@ -995,28 +1027,28 @@ must be made before assignment on the child.</p>
 
     </div>
     <a class="headerlink" href="#ErnieEntPredictionHead.forward"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="ErnieEntPredictionHead.forward-66"><a href="#ErnieEntPredictionHead.forward-66"><span class="linenos">66</span></a>    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hidden_states</span><span class="p">,</span> <span class="n">candidate</span><span class="p">):</span>
-</span><span id="ErnieEntPredictionHead.forward-67"><a href="#ErnieEntPredictionHead.forward-67"><span class="linenos">67</span></a>        <span class="n">hidden_states</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">hidden_states</span><span class="p">)</span>
-</span><span id="ErnieEntPredictionHead.forward-68"><a href="#ErnieEntPredictionHead.forward-68"><span class="linenos">68</span></a>        <span class="n">candidate</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="n">candidate</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
-</span><span id="ErnieEntPredictionHead.forward-69"><a href="#ErnieEntPredictionHead.forward-69"><span class="linenos">69</span></a>        <span class="c1"># hidden_states [batch_size, max_seq, dim]</span>
-</span><span id="ErnieEntPredictionHead.forward-70"><a href="#ErnieEntPredictionHead.forward-70"><span class="linenos">70</span></a>        <span class="c1"># candidate [entity_num_in_the_batch, dim]</span>
-</span><span id="ErnieEntPredictionHead.forward-71"><a href="#ErnieEntPredictionHead.forward-71"><span class="linenos">71</span></a>        <span class="c1"># return [batch_size, max_seq, entity_num_in_the_batch]</span>
-</span><span id="ErnieEntPredictionHead.forward-72"><a href="#ErnieEntPredictionHead.forward-72"><span class="linenos">72</span></a>        <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">matmul</span><span class="p">(</span><span class="n">hidden_states</span><span class="p">,</span> <span class="n">candidate</span><span class="o">.</span><span class="n">t</span><span class="p">())</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="ErnieEntPredictionHead.forward-122"><a href="#ErnieEntPredictionHead.forward-122"><span class="linenos">122</span></a>    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hidden_states</span><span class="p">,</span> <span class="n">candidate</span><span class="p">):</span>
+</span><span id="ErnieEntPredictionHead.forward-123"><a href="#ErnieEntPredictionHead.forward-123"><span class="linenos">123</span></a>        <span class="sd">&quot;&quot;&quot; Forward pass through the module</span>
+</span><span id="ErnieEntPredictionHead.forward-124"><a href="#ErnieEntPredictionHead.forward-124"><span class="linenos">124</span></a><span class="sd">        </span>
+</span><span id="ErnieEntPredictionHead.forward-125"><a href="#ErnieEntPredictionHead.forward-125"><span class="linenos">125</span></a><span class="sd">        Returns:</span>
+</span><span id="ErnieEntPredictionHead.forward-126"><a href="#ErnieEntPredictionHead.forward-126"><span class="linenos">126</span></a><span class="sd">            seq_relationship_score: a torch.Tensor of size [batch_size, seq_length, no_of_entity_in_batch], predicted entities</span>
+</span><span id="ErnieEntPredictionHead.forward-127"><a href="#ErnieEntPredictionHead.forward-127"><span class="linenos">127</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="ErnieEntPredictionHead.forward-128"><a href="#ErnieEntPredictionHead.forward-128"><span class="linenos">128</span></a>        <span class="n">hidden_states</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">hidden_states</span><span class="p">)</span>
+</span><span id="ErnieEntPredictionHead.forward-129"><a href="#ErnieEntPredictionHead.forward-129"><span class="linenos">129</span></a>        <span class="n">candidate</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="n">candidate</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+</span><span id="ErnieEntPredictionHead.forward-130"><a href="#ErnieEntPredictionHead.forward-130"><span class="linenos">130</span></a>        <span class="c1"># hidden_states [batch_size, max_seq, dim]</span>
+</span><span id="ErnieEntPredictionHead.forward-131"><a href="#ErnieEntPredictionHead.forward-131"><span class="linenos">131</span></a>        <span class="c1"># candidate [entity_num_in_the_batch, dim]</span>
+</span><span id="ErnieEntPredictionHead.forward-132"><a href="#ErnieEntPredictionHead.forward-132"><span class="linenos">132</span></a>        <span class="c1"># return [batch_size, max_seq, entity_num_in_the_batch]</span>
+</span><span id="ErnieEntPredictionHead.forward-133"><a href="#ErnieEntPredictionHead.forward-133"><span class="linenos">133</span></a>        <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">matmul</span><span class="p">(</span><span class="n">hidden_states</span><span class="p">,</span> <span class="n">candidate</span><span class="o">.</span><span class="n">t</span><span class="p">())</span>
 </span></pre></div>
 
 
-            <div class="docstring"><p>Defines the computation performed at every call.</p>
+            <div class="docstring"><p>Forward pass through the module</p>
 
-<p>Should be overridden by all subclasses.</p>
+<h6 id="returns">Returns</h6>
 
-<div class="pdoc-alert pdoc-alert-note">
-
-<p>Although the recipe for forward pass needs to be defined within
-this function, one should call the <code>Module</code> instance afterwards
-instead of this since the former takes care of running the
-registered hooks while the latter silently ignores them.</p>
-
-</div>
+<blockquote>
+  <p>seq_relationship_score: a torch.Tensor of size [batch_size, seq_length, no_of_entity_in_batch], predicted entities</p>
+</blockquote>
 </div>
 
 
@@ -1083,55 +1115,38 @@ registered hooks while the latter silently ignores them.</p>
 
     </div>
     <a class="headerlink" href="#ErniePreTrainingHeads"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="ErniePreTrainingHeads-74"><a href="#ErniePreTrainingHeads-74"><span class="linenos">74</span></a><span class="k">class</span> <span class="nc">ErniePreTrainingHeads</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
-</span><span id="ErniePreTrainingHeads-75"><a href="#ErniePreTrainingHeads-75"><span class="linenos">75</span></a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">,</span> <span class="n">bert_model_embedding_weights</span><span class="p">):</span>
-</span><span id="ErniePreTrainingHeads-76"><a href="#ErniePreTrainingHeads-76"><span class="linenos">76</span></a>        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
-</span><span id="ErniePreTrainingHeads-77"><a href="#ErniePreTrainingHeads-77"><span class="linenos">77</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">predictions</span> <span class="o">=</span> <span class="n">BertLMPredictionHead</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">bert_model_embedding_weights</span><span class="p">)</span>
-</span><span id="ErniePreTrainingHeads-78"><a href="#ErniePreTrainingHeads-78"><span class="linenos">78</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">predictions_ent</span> <span class="o">=</span> <span class="n">BertEntPredictionHead</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
-</span><span id="ErniePreTrainingHeads-79"><a href="#ErniePreTrainingHeads-79"><span class="linenos">79</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">seq_relationship</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
-</span><span id="ErniePreTrainingHeads-80"><a href="#ErniePreTrainingHeads-80"><span class="linenos">80</span></a>
-</span><span id="ErniePreTrainingHeads-81"><a href="#ErniePreTrainingHeads-81"><span class="linenos">81</span></a>    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sequence_output</span><span class="p">,</span> <span class="n">pooled_output</span><span class="p">,</span> <span class="n">candidate</span><span class="p">):</span>
-</span><span id="ErniePreTrainingHeads-82"><a href="#ErniePreTrainingHeads-82"><span class="linenos">82</span></a>        <span class="n">prediction_scores</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">predictions</span><span class="p">(</span><span class="n">sequence_output</span><span class="p">)</span>
-</span><span id="ErniePreTrainingHeads-83"><a href="#ErniePreTrainingHeads-83"><span class="linenos">83</span></a>        <span class="n">seq_relationship_score</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">seq_relationship</span><span class="p">(</span><span class="n">pooled_output</span><span class="p">)</span>
-</span><span id="ErniePreTrainingHeads-84"><a href="#ErniePreTrainingHeads-84"><span class="linenos">84</span></a>        <span class="n">prediction_scores_ent</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">predictions_ent</span><span class="p">(</span><span class="n">sequence_output</span><span class="p">,</span> <span class="n">candidate</span><span class="p">)</span>
-</span><span id="ErniePreTrainingHeads-85"><a href="#ErniePreTrainingHeads-85"><span class="linenos">85</span></a>        <span class="k">return</span> <span class="n">prediction_scores</span><span class="p">,</span> <span class="n">seq_relationship_score</span><span class="p">,</span> <span class="n">prediction_scores_ent</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="ErniePreTrainingHeads-135"><a href="#ErniePreTrainingHeads-135"><span class="linenos">135</span></a><span class="k">class</span> <span class="nc">ErniePreTrainingHeads</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+</span><span id="ErniePreTrainingHeads-136"><a href="#ErniePreTrainingHeads-136"><span class="linenos">136</span></a>    <span class="sd">&quot;&quot;&quot;Heads for Ernie Pretraining</span>
+</span><span id="ErniePreTrainingHeads-137"><a href="#ErniePreTrainingHeads-137"><span class="linenos">137</span></a>
+</span><span id="ErniePreTrainingHeads-138"><a href="#ErniePreTrainingHeads-138"><span class="linenos">138</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="ErniePreTrainingHeads-139"><a href="#ErniePreTrainingHeads-139"><span class="linenos">139</span></a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">,</span> <span class="n">bert_model_embedding_weights</span><span class="p">):</span>
+</span><span id="ErniePreTrainingHeads-140"><a href="#ErniePreTrainingHeads-140"><span class="linenos">140</span></a>        <span class="sd">&quot;&quot;&quot; constructs `ErniePreTrainingHeads`</span>
+</span><span id="ErniePreTrainingHeads-141"><a href="#ErniePreTrainingHeads-141"><span class="linenos">141</span></a><span class="sd">        </span>
+</span><span id="ErniePreTrainingHeads-142"><a href="#ErniePreTrainingHeads-142"><span class="linenos">142</span></a><span class="sd">        Args:</span>
+</span><span id="ErniePreTrainingHeads-143"><a href="#ErniePreTrainingHeads-143"><span class="linenos">143</span></a><span class="sd">            config: a `BertConfig`</span>
+</span><span id="ErniePreTrainingHeads-144"><a href="#ErniePreTrainingHeads-144"><span class="linenos">144</span></a><span class="sd">            `bert_model_embedding_weights`:  torch.Tensor of size [hidden_size, vocab_size], the weights of the input embeddings of bert/ernie</span>
+</span><span id="ErniePreTrainingHeads-145"><a href="#ErniePreTrainingHeads-145"><span class="linenos">145</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="ErniePreTrainingHeads-146"><a href="#ErniePreTrainingHeads-146"><span class="linenos">146</span></a>        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+</span><span id="ErniePreTrainingHeads-147"><a href="#ErniePreTrainingHeads-147"><span class="linenos">147</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">predictions</span> <span class="o">=</span> <span class="n">BertLMPredictionHead</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">bert_model_embedding_weights</span><span class="p">)</span>
+</span><span id="ErniePreTrainingHeads-148"><a href="#ErniePreTrainingHeads-148"><span class="linenos">148</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">predictions_ent</span> <span class="o">=</span> <span class="n">BertEntPredictionHead</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+</span><span id="ErniePreTrainingHeads-149"><a href="#ErniePreTrainingHeads-149"><span class="linenos">149</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">seq_relationship</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+</span><span id="ErniePreTrainingHeads-150"><a href="#ErniePreTrainingHeads-150"><span class="linenos">150</span></a>
+</span><span id="ErniePreTrainingHeads-151"><a href="#ErniePreTrainingHeads-151"><span class="linenos">151</span></a>    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sequence_output</span><span class="p">,</span> <span class="n">pooled_output</span><span class="p">,</span> <span class="n">candidate</span><span class="p">):</span>
+</span><span id="ErniePreTrainingHeads-152"><a href="#ErniePreTrainingHeads-152"><span class="linenos">152</span></a>        <span class="sd">&quot;&quot;&quot;forward pass through the module</span>
+</span><span id="ErniePreTrainingHeads-153"><a href="#ErniePreTrainingHeads-153"><span class="linenos">153</span></a><span class="sd">        </span>
+</span><span id="ErniePreTrainingHeads-154"><a href="#ErniePreTrainingHeads-154"><span class="linenos">154</span></a><span class="sd">        Returns:</span>
+</span><span id="ErniePreTrainingHeads-155"><a href="#ErniePreTrainingHeads-155"><span class="linenos">155</span></a><span class="sd">            prediction_scores: token prediction score </span>
+</span><span id="ErniePreTrainingHeads-156"><a href="#ErniePreTrainingHeads-156"><span class="linenos">156</span></a><span class="sd">            seq_relationship_score: next sentence prediction score</span>
+</span><span id="ErniePreTrainingHeads-157"><a href="#ErniePreTrainingHeads-157"><span class="linenos">157</span></a><span class="sd">            prediction_scores_ent: entity prediction score</span>
+</span><span id="ErniePreTrainingHeads-158"><a href="#ErniePreTrainingHeads-158"><span class="linenos">158</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="ErniePreTrainingHeads-159"><a href="#ErniePreTrainingHeads-159"><span class="linenos">159</span></a>        <span class="n">prediction_scores</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">predictions</span><span class="p">(</span><span class="n">sequence_output</span><span class="p">)</span>
+</span><span id="ErniePreTrainingHeads-160"><a href="#ErniePreTrainingHeads-160"><span class="linenos">160</span></a>        <span class="n">seq_relationship_score</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">seq_relationship</span><span class="p">(</span><span class="n">pooled_output</span><span class="p">)</span>
+</span><span id="ErniePreTrainingHeads-161"><a href="#ErniePreTrainingHeads-161"><span class="linenos">161</span></a>        <span class="n">prediction_scores_ent</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">predictions_ent</span><span class="p">(</span><span class="n">sequence_output</span><span class="p">,</span> <span class="n">candidate</span><span class="p">)</span>
+</span><span id="ErniePreTrainingHeads-162"><a href="#ErniePreTrainingHeads-162"><span class="linenos">162</span></a>        <span class="k">return</span> <span class="n">prediction_scores</span><span class="p">,</span> <span class="n">seq_relationship_score</span><span class="p">,</span> <span class="n">prediction_scores_ent</span>
 </span></pre></div>
 
 
-            <div class="docstring"><p>Base class for all neural network modules.</p>
-
-<p>Your models should also subclass this class.</p>
-
-<p>Modules can also contain other Modules, allowing to nest them in
-a tree structure. You can assign the submodules as regular attributes::</p>
-
-<pre><code>import torch.nn as nn
-import torch.nn.functional as F
-
-class Model(nn.Module):
-    def __init__(self):
-        super().__init__()
-        self.conv1 = nn.Conv2d(1, 20, 5)
-        self.conv2 = nn.Conv2d(20, 20, 5)
-
-    def forward(self, x):
-        x = F.relu(self.conv1(x))
-        return F.relu(self.conv2(x))
-</code></pre>
-
-<p>Submodules assigned in this way will be registered, and will have their
-parameters converted too when you call <code><a href="#ErniePreTrainingHeads.to">to</a></code>, etc.</p>
-
-<div class="pdoc-alert pdoc-alert-note">
-
-<p>As per the example above, an <code><a href="#ErniePreTrainingHeads.__init__">__init__()</a></code> call to the parent class
-must be made before assignment on the child.</p>
-
-</div>
-
-<p>:ivar training: Boolean represents whether this module is in training or
-                evaluation mode.
-:vartype training: bool</p>
+            <div class="docstring"><p>Heads for Ernie Pretraining</p>
 </div>
 
 
@@ -1145,15 +1160,28 @@ must be made before assignment on the child.</p>
 
     </div>
     <a class="headerlink" href="#ErniePreTrainingHeads.__init__"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="ErniePreTrainingHeads.__init__-75"><a href="#ErniePreTrainingHeads.__init__-75"><span class="linenos">75</span></a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">,</span> <span class="n">bert_model_embedding_weights</span><span class="p">):</span>
-</span><span id="ErniePreTrainingHeads.__init__-76"><a href="#ErniePreTrainingHeads.__init__-76"><span class="linenos">76</span></a>        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
-</span><span id="ErniePreTrainingHeads.__init__-77"><a href="#ErniePreTrainingHeads.__init__-77"><span class="linenos">77</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">predictions</span> <span class="o">=</span> <span class="n">BertLMPredictionHead</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">bert_model_embedding_weights</span><span class="p">)</span>
-</span><span id="ErniePreTrainingHeads.__init__-78"><a href="#ErniePreTrainingHeads.__init__-78"><span class="linenos">78</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">predictions_ent</span> <span class="o">=</span> <span class="n">BertEntPredictionHead</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
-</span><span id="ErniePreTrainingHeads.__init__-79"><a href="#ErniePreTrainingHeads.__init__-79"><span class="linenos">79</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">seq_relationship</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="ErniePreTrainingHeads.__init__-139"><a href="#ErniePreTrainingHeads.__init__-139"><span class="linenos">139</span></a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">,</span> <span class="n">bert_model_embedding_weights</span><span class="p">):</span>
+</span><span id="ErniePreTrainingHeads.__init__-140"><a href="#ErniePreTrainingHeads.__init__-140"><span class="linenos">140</span></a>        <span class="sd">&quot;&quot;&quot; constructs `ErniePreTrainingHeads`</span>
+</span><span id="ErniePreTrainingHeads.__init__-141"><a href="#ErniePreTrainingHeads.__init__-141"><span class="linenos">141</span></a><span class="sd">        </span>
+</span><span id="ErniePreTrainingHeads.__init__-142"><a href="#ErniePreTrainingHeads.__init__-142"><span class="linenos">142</span></a><span class="sd">        Args:</span>
+</span><span id="ErniePreTrainingHeads.__init__-143"><a href="#ErniePreTrainingHeads.__init__-143"><span class="linenos">143</span></a><span class="sd">            config: a `BertConfig`</span>
+</span><span id="ErniePreTrainingHeads.__init__-144"><a href="#ErniePreTrainingHeads.__init__-144"><span class="linenos">144</span></a><span class="sd">            `bert_model_embedding_weights`:  torch.Tensor of size [hidden_size, vocab_size], the weights of the input embeddings of bert/ernie</span>
+</span><span id="ErniePreTrainingHeads.__init__-145"><a href="#ErniePreTrainingHeads.__init__-145"><span class="linenos">145</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="ErniePreTrainingHeads.__init__-146"><a href="#ErniePreTrainingHeads.__init__-146"><span class="linenos">146</span></a>        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+</span><span id="ErniePreTrainingHeads.__init__-147"><a href="#ErniePreTrainingHeads.__init__-147"><span class="linenos">147</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">predictions</span> <span class="o">=</span> <span class="n">BertLMPredictionHead</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">bert_model_embedding_weights</span><span class="p">)</span>
+</span><span id="ErniePreTrainingHeads.__init__-148"><a href="#ErniePreTrainingHeads.__init__-148"><span class="linenos">148</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">predictions_ent</span> <span class="o">=</span> <span class="n">BertEntPredictionHead</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+</span><span id="ErniePreTrainingHeads.__init__-149"><a href="#ErniePreTrainingHeads.__init__-149"><span class="linenos">149</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">seq_relationship</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
 </span></pre></div>
 
 
-            <div class="docstring"><p>Initializes internal Module state, shared by both nn.Module and ScriptModule.</p>
+            <div class="docstring"><p>constructs <code><a href="#ErniePreTrainingHeads">ErniePreTrainingHeads</a></code></p>
+
+<h6 id="args">Args</h6>
+
+<ul>
+<li><strong>config:</strong>  a <code>BertConfig</code></li>
+<li><strong><code>bert_model_embedding_weights</code>:</strong>   torch.Tensor of size [hidden_size, vocab_size], the weights of the input embeddings of bert/ernie</li>
+</ul>
 </div>
 
 
@@ -1169,26 +1197,30 @@ must be made before assignment on the child.</p>
 
     </div>
     <a class="headerlink" href="#ErniePreTrainingHeads.forward"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="ErniePreTrainingHeads.forward-81"><a href="#ErniePreTrainingHeads.forward-81"><span class="linenos">81</span></a>    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sequence_output</span><span class="p">,</span> <span class="n">pooled_output</span><span class="p">,</span> <span class="n">candidate</span><span class="p">):</span>
-</span><span id="ErniePreTrainingHeads.forward-82"><a href="#ErniePreTrainingHeads.forward-82"><span class="linenos">82</span></a>        <span class="n">prediction_scores</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">predictions</span><span class="p">(</span><span class="n">sequence_output</span><span class="p">)</span>
-</span><span id="ErniePreTrainingHeads.forward-83"><a href="#ErniePreTrainingHeads.forward-83"><span class="linenos">83</span></a>        <span class="n">seq_relationship_score</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">seq_relationship</span><span class="p">(</span><span class="n">pooled_output</span><span class="p">)</span>
-</span><span id="ErniePreTrainingHeads.forward-84"><a href="#ErniePreTrainingHeads.forward-84"><span class="linenos">84</span></a>        <span class="n">prediction_scores_ent</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">predictions_ent</span><span class="p">(</span><span class="n">sequence_output</span><span class="p">,</span> <span class="n">candidate</span><span class="p">)</span>
-</span><span id="ErniePreTrainingHeads.forward-85"><a href="#ErniePreTrainingHeads.forward-85"><span class="linenos">85</span></a>        <span class="k">return</span> <span class="n">prediction_scores</span><span class="p">,</span> <span class="n">seq_relationship_score</span><span class="p">,</span> <span class="n">prediction_scores_ent</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="ErniePreTrainingHeads.forward-151"><a href="#ErniePreTrainingHeads.forward-151"><span class="linenos">151</span></a>    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sequence_output</span><span class="p">,</span> <span class="n">pooled_output</span><span class="p">,</span> <span class="n">candidate</span><span class="p">):</span>
+</span><span id="ErniePreTrainingHeads.forward-152"><a href="#ErniePreTrainingHeads.forward-152"><span class="linenos">152</span></a>        <span class="sd">&quot;&quot;&quot;forward pass through the module</span>
+</span><span id="ErniePreTrainingHeads.forward-153"><a href="#ErniePreTrainingHeads.forward-153"><span class="linenos">153</span></a><span class="sd">        </span>
+</span><span id="ErniePreTrainingHeads.forward-154"><a href="#ErniePreTrainingHeads.forward-154"><span class="linenos">154</span></a><span class="sd">        Returns:</span>
+</span><span id="ErniePreTrainingHeads.forward-155"><a href="#ErniePreTrainingHeads.forward-155"><span class="linenos">155</span></a><span class="sd">            prediction_scores: token prediction score </span>
+</span><span id="ErniePreTrainingHeads.forward-156"><a href="#ErniePreTrainingHeads.forward-156"><span class="linenos">156</span></a><span class="sd">            seq_relationship_score: next sentence prediction score</span>
+</span><span id="ErniePreTrainingHeads.forward-157"><a href="#ErniePreTrainingHeads.forward-157"><span class="linenos">157</span></a><span class="sd">            prediction_scores_ent: entity prediction score</span>
+</span><span id="ErniePreTrainingHeads.forward-158"><a href="#ErniePreTrainingHeads.forward-158"><span class="linenos">158</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="ErniePreTrainingHeads.forward-159"><a href="#ErniePreTrainingHeads.forward-159"><span class="linenos">159</span></a>        <span class="n">prediction_scores</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">predictions</span><span class="p">(</span><span class="n">sequence_output</span><span class="p">)</span>
+</span><span id="ErniePreTrainingHeads.forward-160"><a href="#ErniePreTrainingHeads.forward-160"><span class="linenos">160</span></a>        <span class="n">seq_relationship_score</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">seq_relationship</span><span class="p">(</span><span class="n">pooled_output</span><span class="p">)</span>
+</span><span id="ErniePreTrainingHeads.forward-161"><a href="#ErniePreTrainingHeads.forward-161"><span class="linenos">161</span></a>        <span class="n">prediction_scores_ent</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">predictions_ent</span><span class="p">(</span><span class="n">sequence_output</span><span class="p">,</span> <span class="n">candidate</span><span class="p">)</span>
+</span><span id="ErniePreTrainingHeads.forward-162"><a href="#ErniePreTrainingHeads.forward-162"><span class="linenos">162</span></a>        <span class="k">return</span> <span class="n">prediction_scores</span><span class="p">,</span> <span class="n">seq_relationship_score</span><span class="p">,</span> <span class="n">prediction_scores_ent</span>
 </span></pre></div>
 
 
-            <div class="docstring"><p>Defines the computation performed at every call.</p>
+            <div class="docstring"><p>forward pass through the module</p>
 
-<p>Should be overridden by all subclasses.</p>
+<h6 id="returns">Returns</h6>
 
-<div class="pdoc-alert pdoc-alert-note">
-
-<p>Although the recipe for forward pass needs to be defined within
-this function, one should call the <code>Module</code> instance afterwards
-instead of this since the former takes care of running the
-registered hooks while the latter silently ignores them.</p>
-
-</div>
+<blockquote>
+  <p>prediction_scores: token prediction score 
+  seq_relationship_score: next sentence prediction score
+  prediction_scores_ent: entity prediction score</p>
+</blockquote>
 </div>
 
 

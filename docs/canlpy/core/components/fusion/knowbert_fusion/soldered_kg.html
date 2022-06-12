@@ -1000,7 +1000,7 @@
 </span><span id="L-872"><a href="#L-872"><span class="linenos">872</span></a><span class="sd">            candidate_segment_ids: the segment ids of the candidate entities</span>
 </span><span id="L-873"><a href="#L-873"><span class="linenos">873</span></a><span class="sd">            </span>
 </span><span id="L-874"><a href="#L-874"><span class="linenos">874</span></a><span class="sd">        Returns:</span>
-</span><span id="L-875"><a href="#L-875"><span class="linenos">875</span></a><span class="sd">            a dictionnary: </span>
+</span><span id="L-875"><a href="#L-875"><span class="linenos">875</span></a><span class="sd">            a dictionary: </span>
 </span><span id="L-876"><a href="#L-876"><span class="linenos">876</span></a><span class="sd">            {&#39;entity_attention_probs&#39;: entity_attention_probs,</span>
 </span><span id="L-877"><a href="#L-877"><span class="linenos">877</span></a><span class="sd">            &#39;contextual_embeddings&#39;: new_contextual_embeddings,</span>
 </span><span id="L-878"><a href="#L-878"><span class="linenos">878</span></a><span class="sd">            &#39;linking_scores&#39;: linker_output[&#39;linking_scores&#39;]}</span>
@@ -2868,7 +2868,7 @@ registered hooks while the latter silently ignores them.</p>
 </span><span id="SolderedKG-873"><a href="#SolderedKG-873"><span class="linenos">873</span></a><span class="sd">            candidate_segment_ids: the segment ids of the candidate entities</span>
 </span><span id="SolderedKG-874"><a href="#SolderedKG-874"><span class="linenos">874</span></a><span class="sd">            </span>
 </span><span id="SolderedKG-875"><a href="#SolderedKG-875"><span class="linenos">875</span></a><span class="sd">        Returns:</span>
-</span><span id="SolderedKG-876"><a href="#SolderedKG-876"><span class="linenos">876</span></a><span class="sd">            a dictionnary: </span>
+</span><span id="SolderedKG-876"><a href="#SolderedKG-876"><span class="linenos">876</span></a><span class="sd">            a dictionary: </span>
 </span><span id="SolderedKG-877"><a href="#SolderedKG-877"><span class="linenos">877</span></a><span class="sd">            {&#39;entity_attention_probs&#39;: entity_attention_probs,</span>
 </span><span id="SolderedKG-878"><a href="#SolderedKG-878"><span class="linenos">878</span></a><span class="sd">            &#39;contextual_embeddings&#39;: new_contextual_embeddings,</span>
 </span><span id="SolderedKG-879"><a href="#SolderedKG-879"><span class="linenos">879</span></a><span class="sd">            &#39;linking_scores&#39;: linker_output[&#39;linking_scores&#39;]}</span>
@@ -2994,7 +2994,8 @@ registered hooks while the latter silently ignores them.</p>
 </span></pre></div>
 
 
-            <div class="docstring"><p>Initializes internal Module state, shared by both nn.Module and ScriptModule.</p>
+            <div class="docstring"><p>TO BE OVERWRITTEN <br />
+constructs Fusion module</p>
 </div>
 
 
@@ -3165,7 +3166,7 @@ else, unfreeze all the parameterss</li>
 </span><span id="SolderedKG.forward-873"><a href="#SolderedKG.forward-873"><span class="linenos">873</span></a><span class="sd">            candidate_segment_ids: the segment ids of the candidate entities</span>
 </span><span id="SolderedKG.forward-874"><a href="#SolderedKG.forward-874"><span class="linenos">874</span></a><span class="sd">            </span>
 </span><span id="SolderedKG.forward-875"><a href="#SolderedKG.forward-875"><span class="linenos">875</span></a><span class="sd">        Returns:</span>
-</span><span id="SolderedKG.forward-876"><a href="#SolderedKG.forward-876"><span class="linenos">876</span></a><span class="sd">            a dictionnary: </span>
+</span><span id="SolderedKG.forward-876"><a href="#SolderedKG.forward-876"><span class="linenos">876</span></a><span class="sd">            a dictionary: </span>
 </span><span id="SolderedKG.forward-877"><a href="#SolderedKG.forward-877"><span class="linenos">877</span></a><span class="sd">            {&#39;entity_attention_probs&#39;: entity_attention_probs,</span>
 </span><span id="SolderedKG.forward-878"><a href="#SolderedKG.forward-878"><span class="linenos">878</span></a><span class="sd">            &#39;contextual_embeddings&#39;: new_contextual_embeddings,</span>
 </span><span id="SolderedKG.forward-879"><a href="#SolderedKG.forward-879"><span class="linenos">879</span></a><span class="sd">            &#39;linking_scores&#39;: linker_output[&#39;linking_scores&#39;]}</span>
@@ -3229,7 +3230,7 @@ else, unfreeze all the parameterss</li>
 <h6 id="returns">Returns</h6>
 
 <blockquote>
-  <p>a dictionnary: 
+  <p>a dictionary: 
   {'entity_attention_probs': entity_attention_probs,
   'contextual_embeddings': new_contextual_embeddings,
   'linking_scores': linker_output['linking_scores']}</p>
