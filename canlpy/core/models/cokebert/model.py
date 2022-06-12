@@ -1,3 +1,6 @@
+# This file is adapted from the CokeBERT repository at https://github.com/thunlp/CokeBERT
+# Copyright by the CokeBERT authors.
+
 # -*- coding: utf-8 -*-
 """Re-Implementation of the CokeBert Model (Su et al., 2020)
 

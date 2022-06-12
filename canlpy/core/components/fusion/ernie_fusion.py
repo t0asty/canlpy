@@ -1,3 +1,6 @@
+# This file is adapted from the ERNIE repository at https://github.com/thunlp/ERNIE
+# Copyright by the ERNIE authors.
+
 import torch.nn as nn
 from canlpy.core.components.activation_functions import get_activation_function
 from canlpy.core.models.bert.model import DenseSkipLayer

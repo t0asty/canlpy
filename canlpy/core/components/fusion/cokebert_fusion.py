@@ -1,3 +1,6 @@
+# This file is adapted from the CokeBERT repository at https://github.com/thunlp/CokeBERT
+# Copyright by the CokeBERT authors.
+
 import math
 import torch.nn as nn
 from canlpy.core.components.fusion import Fusion
