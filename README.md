@@ -36,6 +36,10 @@ Store the content of ernie_base in pretrained_models/ernie/
 
 Code to use the three models can be found in [examples/](examples/)
 
+### Benchmarks
+
+Benchmarks to compare the models can be found in [experiments/](experiments/)
+
 ### Tokens
 
 To use ERNIE and CokeBERT, register your TAGME_TOKEN token in a tokens.py file located in the canlpy/helpers folder
