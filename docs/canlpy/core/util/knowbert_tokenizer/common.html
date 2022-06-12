@@ -68,26 +68,28 @@
 </span><span id="L-3"><a href="#L-3"><span class="linenos"> 3</span></a>
 </span><span id="L-4"><a href="#L-4"><span class="linenos"> 4</span></a><span class="k">def</span> <span class="nf">get_empty_candidates</span><span class="p">():</span>
 </span><span id="L-5"><a href="#L-5"><span class="linenos"> 5</span></a>    <span class="sd">&quot;&quot;&quot;</span>
-</span><span id="L-6"><a href="#L-6"><span class="linenos"> 6</span></a><span class="sd">    The mention generators always return at least one candidate, but signal</span>
-</span><span id="L-7"><a href="#L-7"><span class="linenos"> 7</span></a><span class="sd">    it with this special candidate</span>
-</span><span id="L-8"><a href="#L-8"><span class="linenos"> 8</span></a><span class="sd">    &quot;&quot;&quot;</span>
-</span><span id="L-9"><a href="#L-9"><span class="linenos"> 9</span></a>    <span class="k">return</span> <span class="p">{</span>
-</span><span id="L-10"><a href="#L-10"><span class="linenos">10</span></a>        <span class="s2">&quot;candidate_spans&quot;</span><span class="p">:</span> <span class="p">[[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">]],</span>
-</span><span id="L-11"><a href="#L-11"><span class="linenos">11</span></a>        <span class="s2">&quot;candidate_entities&quot;</span><span class="p">:</span> <span class="p">[[</span><span class="s2">&quot;@@PADDING@@&quot;</span><span class="p">]],</span>
-</span><span id="L-12"><a href="#L-12"><span class="linenos">12</span></a>        <span class="s2">&quot;candidate_entity_priors&quot;</span><span class="p">:</span> <span class="p">[[</span><span class="mf">1.0</span><span class="p">]]</span>
-</span><span id="L-13"><a href="#L-13"><span class="linenos">13</span></a>    <span class="p">}</span>
+</span><span id="L-6"><a href="#L-6"><span class="linenos"> 6</span></a><span class="sd">    Returns the values corresponding to an empty candidate</span>
+</span><span id="L-7"><a href="#L-7"><span class="linenos"> 7</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="L-8"><a href="#L-8"><span class="linenos"> 8</span></a>    <span class="k">return</span> <span class="p">{</span>
+</span><span id="L-9"><a href="#L-9"><span class="linenos"> 9</span></a>        <span class="s2">&quot;candidate_spans&quot;</span><span class="p">:</span> <span class="p">[[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">]],</span>
+</span><span id="L-10"><a href="#L-10"><span class="linenos">10</span></a>        <span class="s2">&quot;candidate_entities&quot;</span><span class="p">:</span> <span class="p">[[</span><span class="s2">&quot;@@PADDING@@&quot;</span><span class="p">]],</span>
+</span><span id="L-11"><a href="#L-11"><span class="linenos">11</span></a>        <span class="s2">&quot;candidate_entity_priors&quot;</span><span class="p">:</span> <span class="p">[[</span><span class="mf">1.0</span><span class="p">]]</span>
+</span><span id="L-12"><a href="#L-12"><span class="linenos">12</span></a>    <span class="p">}</span>
+</span><span id="L-13"><a href="#L-13"><span class="linenos">13</span></a>
 </span><span id="L-14"><a href="#L-14"><span class="linenos">14</span></a>
-</span><span id="L-15"><a href="#L-15"><span class="linenos">15</span></a>
-</span><span id="L-16"><a href="#L-16"><span class="linenos">16</span></a><span class="c1"># from https://spacy.io/usage/linguistic-features#custom-tokenizer-example</span>
-</span><span id="L-17"><a href="#L-17"><span class="linenos">17</span></a><span class="k">class</span> <span class="nc">WhitespaceTokenizer</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
-</span><span id="L-18"><a href="#L-18"><span class="linenos">18</span></a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vocab</span><span class="p">):</span>
-</span><span id="L-19"><a href="#L-19"><span class="linenos">19</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">vocab</span> <span class="o">=</span> <span class="n">vocab</span>
-</span><span id="L-20"><a href="#L-20"><span class="linenos">20</span></a>
-</span><span id="L-21"><a href="#L-21"><span class="linenos">21</span></a>    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">):</span>
-</span><span id="L-22"><a href="#L-22"><span class="linenos">22</span></a>        <span class="n">words</span> <span class="o">=</span> <span class="n">text</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39; &#39;</span><span class="p">)</span>
-</span><span id="L-23"><a href="#L-23"><span class="linenos">23</span></a>        <span class="c1"># All tokens &#39;own&#39; a subsequent space character in this tokenizer</span>
-</span><span id="L-24"><a href="#L-24"><span class="linenos">24</span></a>        <span class="n">spaces</span> <span class="o">=</span> <span class="p">[</span><span class="kc">True</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">words</span><span class="p">)</span>
-</span><span id="L-25"><a href="#L-25"><span class="linenos">25</span></a>        <span class="k">return</span> <span class="n">Doc</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">vocab</span><span class="p">,</span> <span class="n">words</span><span class="o">=</span><span class="n">words</span><span class="p">,</span> <span class="n">spaces</span><span class="o">=</span><span class="n">spaces</span><span class="p">)</span>
+</span><span id="L-15"><a href="#L-15"><span class="linenos">15</span></a><span class="c1"># from https://spacy.io/usage/linguistic-features#custom-tokenizer-example</span>
+</span><span id="L-16"><a href="#L-16"><span class="linenos">16</span></a><span class="k">class</span> <span class="nc">WhitespaceTokenizer</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+</span><span id="L-17"><a href="#L-17"><span class="linenos">17</span></a>    <span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-18"><a href="#L-18"><span class="linenos">18</span></a><span class="sd">    Simple whitespace tokenizer useable by spacy</span>
+</span><span id="L-19"><a href="#L-19"><span class="linenos">19</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="L-20"><a href="#L-20"><span class="linenos">20</span></a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vocab</span><span class="p">):</span>
+</span><span id="L-21"><a href="#L-21"><span class="linenos">21</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">vocab</span> <span class="o">=</span> <span class="n">vocab</span>
+</span><span id="L-22"><a href="#L-22"><span class="linenos">22</span></a>
+</span><span id="L-23"><a href="#L-23"><span class="linenos">23</span></a>    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">):</span>
+</span><span id="L-24"><a href="#L-24"><span class="linenos">24</span></a>        <span class="n">words</span> <span class="o">=</span> <span class="n">text</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39; &#39;</span><span class="p">)</span>
+</span><span id="L-25"><a href="#L-25"><span class="linenos">25</span></a>        <span class="c1"># All tokens &#39;own&#39; a subsequent space character in this tokenizer</span>
+</span><span id="L-26"><a href="#L-26"><span class="linenos">26</span></a>        <span class="n">spaces</span> <span class="o">=</span> <span class="p">[</span><span class="kc">True</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">words</span><span class="p">)</span>
+</span><span id="L-27"><a href="#L-27"><span class="linenos">27</span></a>        <span class="k">return</span> <span class="n">Doc</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">vocab</span><span class="p">,</span> <span class="n">words</span><span class="o">=</span><span class="n">words</span><span class="p">,</span> <span class="n">spaces</span><span class="o">=</span><span class="n">spaces</span><span class="p">)</span>
 </span></pre></div>
 
 
@@ -105,19 +107,17 @@
     <a class="headerlink" href="#get_empty_candidates"></a>
             <div class="pdoc-code codehilite"><pre><span></span><span id="get_empty_candidates-5"><a href="#get_empty_candidates-5"><span class="linenos"> 5</span></a><span class="k">def</span> <span class="nf">get_empty_candidates</span><span class="p">():</span>
 </span><span id="get_empty_candidates-6"><a href="#get_empty_candidates-6"><span class="linenos"> 6</span></a>    <span class="sd">&quot;&quot;&quot;</span>
-</span><span id="get_empty_candidates-7"><a href="#get_empty_candidates-7"><span class="linenos"> 7</span></a><span class="sd">    The mention generators always return at least one candidate, but signal</span>
-</span><span id="get_empty_candidates-8"><a href="#get_empty_candidates-8"><span class="linenos"> 8</span></a><span class="sd">    it with this special candidate</span>
-</span><span id="get_empty_candidates-9"><a href="#get_empty_candidates-9"><span class="linenos"> 9</span></a><span class="sd">    &quot;&quot;&quot;</span>
-</span><span id="get_empty_candidates-10"><a href="#get_empty_candidates-10"><span class="linenos">10</span></a>    <span class="k">return</span> <span class="p">{</span>
-</span><span id="get_empty_candidates-11"><a href="#get_empty_candidates-11"><span class="linenos">11</span></a>        <span class="s2">&quot;candidate_spans&quot;</span><span class="p">:</span> <span class="p">[[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">]],</span>
-</span><span id="get_empty_candidates-12"><a href="#get_empty_candidates-12"><span class="linenos">12</span></a>        <span class="s2">&quot;candidate_entities&quot;</span><span class="p">:</span> <span class="p">[[</span><span class="s2">&quot;@@PADDING@@&quot;</span><span class="p">]],</span>
-</span><span id="get_empty_candidates-13"><a href="#get_empty_candidates-13"><span class="linenos">13</span></a>        <span class="s2">&quot;candidate_entity_priors&quot;</span><span class="p">:</span> <span class="p">[[</span><span class="mf">1.0</span><span class="p">]]</span>
-</span><span id="get_empty_candidates-14"><a href="#get_empty_candidates-14"><span class="linenos">14</span></a>    <span class="p">}</span>
+</span><span id="get_empty_candidates-7"><a href="#get_empty_candidates-7"><span class="linenos"> 7</span></a><span class="sd">    Returns the values corresponding to an empty candidate</span>
+</span><span id="get_empty_candidates-8"><a href="#get_empty_candidates-8"><span class="linenos"> 8</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="get_empty_candidates-9"><a href="#get_empty_candidates-9"><span class="linenos"> 9</span></a>    <span class="k">return</span> <span class="p">{</span>
+</span><span id="get_empty_candidates-10"><a href="#get_empty_candidates-10"><span class="linenos">10</span></a>        <span class="s2">&quot;candidate_spans&quot;</span><span class="p">:</span> <span class="p">[[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">]],</span>
+</span><span id="get_empty_candidates-11"><a href="#get_empty_candidates-11"><span class="linenos">11</span></a>        <span class="s2">&quot;candidate_entities&quot;</span><span class="p">:</span> <span class="p">[[</span><span class="s2">&quot;@@PADDING@@&quot;</span><span class="p">]],</span>
+</span><span id="get_empty_candidates-12"><a href="#get_empty_candidates-12"><span class="linenos">12</span></a>        <span class="s2">&quot;candidate_entity_priors&quot;</span><span class="p">:</span> <span class="p">[[</span><span class="mf">1.0</span><span class="p">]]</span>
+</span><span id="get_empty_candidates-13"><a href="#get_empty_candidates-13"><span class="linenos">13</span></a>    <span class="p">}</span>
 </span></pre></div>
 
 
-            <div class="docstring"><p>The mention generators always return at least one candidate, but signal
-it with this special candidate</p>
+            <div class="docstring"><p>Returns the values corresponding to an empty candidate</p>
 </div>
 
 
@@ -133,19 +133,24 @@ it with this special candidate</p>
 
     </div>
     <a class="headerlink" href="#WhitespaceTokenizer"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="WhitespaceTokenizer-18"><a href="#WhitespaceTokenizer-18"><span class="linenos">18</span></a><span class="k">class</span> <span class="nc">WhitespaceTokenizer</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
-</span><span id="WhitespaceTokenizer-19"><a href="#WhitespaceTokenizer-19"><span class="linenos">19</span></a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vocab</span><span class="p">):</span>
-</span><span id="WhitespaceTokenizer-20"><a href="#WhitespaceTokenizer-20"><span class="linenos">20</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">vocab</span> <span class="o">=</span> <span class="n">vocab</span>
-</span><span id="WhitespaceTokenizer-21"><a href="#WhitespaceTokenizer-21"><span class="linenos">21</span></a>
-</span><span id="WhitespaceTokenizer-22"><a href="#WhitespaceTokenizer-22"><span class="linenos">22</span></a>    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">):</span>
-</span><span id="WhitespaceTokenizer-23"><a href="#WhitespaceTokenizer-23"><span class="linenos">23</span></a>        <span class="n">words</span> <span class="o">=</span> <span class="n">text</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39; &#39;</span><span class="p">)</span>
-</span><span id="WhitespaceTokenizer-24"><a href="#WhitespaceTokenizer-24"><span class="linenos">24</span></a>        <span class="c1"># All tokens &#39;own&#39; a subsequent space character in this tokenizer</span>
-</span><span id="WhitespaceTokenizer-25"><a href="#WhitespaceTokenizer-25"><span class="linenos">25</span></a>        <span class="n">spaces</span> <span class="o">=</span> <span class="p">[</span><span class="kc">True</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">words</span><span class="p">)</span>
-</span><span id="WhitespaceTokenizer-26"><a href="#WhitespaceTokenizer-26"><span class="linenos">26</span></a>        <span class="k">return</span> <span class="n">Doc</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">vocab</span><span class="p">,</span> <span class="n">words</span><span class="o">=</span><span class="n">words</span><span class="p">,</span> <span class="n">spaces</span><span class="o">=</span><span class="n">spaces</span><span class="p">)</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="WhitespaceTokenizer-17"><a href="#WhitespaceTokenizer-17"><span class="linenos">17</span></a><span class="k">class</span> <span class="nc">WhitespaceTokenizer</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+</span><span id="WhitespaceTokenizer-18"><a href="#WhitespaceTokenizer-18"><span class="linenos">18</span></a>    <span class="sd">&quot;&quot;&quot;</span>
+</span><span id="WhitespaceTokenizer-19"><a href="#WhitespaceTokenizer-19"><span class="linenos">19</span></a><span class="sd">    Simple whitespace tokenizer useable by spacy</span>
+</span><span id="WhitespaceTokenizer-20"><a href="#WhitespaceTokenizer-20"><span class="linenos">20</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="WhitespaceTokenizer-21"><a href="#WhitespaceTokenizer-21"><span class="linenos">21</span></a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vocab</span><span class="p">):</span>
+</span><span id="WhitespaceTokenizer-22"><a href="#WhitespaceTokenizer-22"><span class="linenos">22</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">vocab</span> <span class="o">=</span> <span class="n">vocab</span>
+</span><span id="WhitespaceTokenizer-23"><a href="#WhitespaceTokenizer-23"><span class="linenos">23</span></a>
+</span><span id="WhitespaceTokenizer-24"><a href="#WhitespaceTokenizer-24"><span class="linenos">24</span></a>    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">):</span>
+</span><span id="WhitespaceTokenizer-25"><a href="#WhitespaceTokenizer-25"><span class="linenos">25</span></a>        <span class="n">words</span> <span class="o">=</span> <span class="n">text</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39; &#39;</span><span class="p">)</span>
+</span><span id="WhitespaceTokenizer-26"><a href="#WhitespaceTokenizer-26"><span class="linenos">26</span></a>        <span class="c1"># All tokens &#39;own&#39; a subsequent space character in this tokenizer</span>
+</span><span id="WhitespaceTokenizer-27"><a href="#WhitespaceTokenizer-27"><span class="linenos">27</span></a>        <span class="n">spaces</span> <span class="o">=</span> <span class="p">[</span><span class="kc">True</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">words</span><span class="p">)</span>
+</span><span id="WhitespaceTokenizer-28"><a href="#WhitespaceTokenizer-28"><span class="linenos">28</span></a>        <span class="k">return</span> <span class="n">Doc</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">vocab</span><span class="p">,</span> <span class="n">words</span><span class="o">=</span><span class="n">words</span><span class="p">,</span> <span class="n">spaces</span><span class="o">=</span><span class="n">spaces</span><span class="p">)</span>
 </span></pre></div>
 
 
-    
+            <div class="docstring"><p>Simple whitespace tokenizer useable by spacy</p>
+</div>
+
 
                             <div id="WhitespaceTokenizer.__init__" class="classattr">
                                         <input id="WhitespaceTokenizer.__init__-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
@@ -157,8 +162,8 @@ it with this special candidate</p>
 
     </div>
     <a class="headerlink" href="#WhitespaceTokenizer.__init__"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="WhitespaceTokenizer.__init__-19"><a href="#WhitespaceTokenizer.__init__-19"><span class="linenos">19</span></a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vocab</span><span class="p">):</span>
-</span><span id="WhitespaceTokenizer.__init__-20"><a href="#WhitespaceTokenizer.__init__-20"><span class="linenos">20</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">vocab</span> <span class="o">=</span> <span class="n">vocab</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="WhitespaceTokenizer.__init__-21"><a href="#WhitespaceTokenizer.__init__-21"><span class="linenos">21</span></a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vocab</span><span class="p">):</span>
+</span><span id="WhitespaceTokenizer.__init__-22"><a href="#WhitespaceTokenizer.__init__-22"><span class="linenos">22</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">vocab</span> <span class="o">=</span> <span class="n">vocab</span>
 </span></pre></div>
 
 
