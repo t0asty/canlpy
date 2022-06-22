@@ -1,3 +1,6 @@
+# This file is adapted from the ERNIE repository at https://github.com/thunlp/ERNIE
+# Copyright by the ERNIE authors.
+
 from canlpy.core.util.tokenization import BertTokenizer
 from canlpy.helpers.tokens import TAGME_TOKEN
 from typing import List,Dict,Tuple

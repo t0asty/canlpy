@@ -1,3 +1,6 @@
+# This file is adapted from the ERNIE repository at https://github.com/thunlp/ERNIE
+# Copyright by the ERNIE authors.
+
 import torch
 import math
 import torch.nn as nn
