@@ -13,6 +13,14 @@ Run ```pip install -e .``` in the home directory to setup the project
 canlpy uses [spacy](https://spacy.io) for various text processing purposes, which requires a spacy language package to be installed using
 ```python -m spacy download en_core_web_sm```
 
+### Documentation
+
+To generate the documentation, get the latest version of pdoc and run 
+
+```pdoc ./canlpy --docformat google -o ./docs```
+
+in the top level folder of this repo.
+
 ## Pre-trained Models
 
 ### ERNIE
