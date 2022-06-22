@@ -1,3 +1,6 @@
+# This file is adapted from the CokeBERT repository at https://github.com/thunlp/CokeBERT
+# Copyright by the CokeBERT authors.
+
 import torch
 
 def load_k_v_queryR(input_ent, ent_to_neighbors, ent_to_relations, ent_to_outORin, embed_ent, r_embed, device='cpu', dk_layers=2):

@@ -1,4 +1,7 @@
 # coding=utf-8
+# This file is adapted from the CokeBERT repository at https://github.com/thunlp/CokeBERT
+# Copyright by the CokeBERT authors.
+#
 # Copyright 2018 The Google AI Language Team Authors and The HugginFace Inc. team.
 # Copyright (c) 2018, NVIDIA CORPORATION.  All rights reserved.
 #

@@ -1,4 +1,7 @@
 # coding=utf-8
+# This file is adapted from the ERNIE repository at https://github.com/thunlp/ERNIE
+# Copyright by the ERNIE authors.
+#
 # Copyright 2018 The Google AI Language Team Authors and The HugginFace Inc. team.
 # Copyright (c) 2018, NVIDIA CORPORATION.  All rights reserved.
 #
